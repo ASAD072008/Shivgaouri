@@ -43,18 +43,11 @@ export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const [products, setProducts] = useState<Product[]>(defaultProducts);
+  const [products, setProducts] = useState<Product[]>([]);
 
-  const [categories, setCategories] = useState<import('./types').Category[]>(() => {
-    const initialCats: import('./types').Category[] = [];
-    defaultProducts.forEach(p => {
-      if (!initialCats.find(c => c.en === p.en.badge)) {
-        initialCats.push({ id: p.en.badge, en: p.en.badge, kn: p.kn.badge });
-      }
-    });
-    return initialCats;
-  });
+  const [categories, setCategories] = useState<import('./types').Category[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -65,34 +58,32 @@ export default function App() {
         let finalCats = fetchedCats;
         let finalProds = fetchedProds;
 
-        if (fetchedCats.length === 0 && fetchedProds.length === 0) {
-          // Empty DB, populate with defaults
+        if (fetchedProds.length === 0) {
+          finalProds = defaultProducts;
+          for (const prod of defaultProducts) {
+            await saveProduct(prod);
+          }
+        }
+
+        if (fetchedCats.length === 0) {
           const defaultCats: import('./types').Category[] = [];
-          defaultProducts.forEach(p => {
+          finalProds.forEach(p => {
             if (!defaultCats.find(c => c.en === p.en.badge)) {
               defaultCats.push({ id: p.en.badge, en: p.en.badge, kn: p.kn.badge });
             }
           });
-
-          // Save defaults to Firestore
+          finalCats = defaultCats;
           for (const cat of defaultCats) {
             await saveCategory(cat);
           }
-          for (const prod of defaultProducts) {
-            await saveProduct(prod);
-          }
-          
-          finalCats = defaultCats;
-          finalProds = defaultProducts;
-        } else {
-          if (fetchedCats.length > 0) finalCats = fetchedCats;
-          if (fetchedProds.length > 0) finalProds = fetchedProds;
         }
 
         setCategories(finalCats);
         setProducts(finalProds);
       } catch (err) {
         console.error("Error loading data from Firestore:", err);
+      } finally {
+        setIsLoading(false);
       }
     }
     loadData();
@@ -111,6 +102,19 @@ export default function App() {
   const filteredProducts = activeCategory === 'All' 
     ? products 
     : products.filter(p => p.en.badge === activeCategory);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-[#8B1C31] mb-6 animate-pulse">
+          <path d="M12 2C8 6 4 11 4 16C4 20.418 7.582 24 12 24C16.418 24 20 20.418 20 16C20 11 16 6 12 2Z" fill="currentColor" opacity="0.1"/>
+          <path d="M12 4.5C9.5 7.5 7 11.5 7 15.5C7 18.5 9.2 21 12 21C14.8 21 17 18.5 17 15.5C17 11.5 14.5 7.5 12 4.5Z" stroke="currentColor" strokeWidth="1.2"/>
+          <path d="M10.5 11.5C10.5 10 11.5 9 12.5 9C13.5 9 14.5 10 14 11.5C13 14 10 14.5 10 17C10 18.5 11 19.5 12.5 19" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+        </svg>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-medium animate-pulse">Loading / ಲೋಡ್ ಆಗುತ್ತಿದೆ...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white font-sans text-[#1a1a1a] selection:bg-[#8B1C31] selection:text-white">
