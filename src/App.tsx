@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Menu, Search, ShoppingBag, ArrowRight, Globe, Lock } from 'lucide-react';
+import { Menu, Search, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X } from 'lucide-react';
 import { Product } from './types';
 import AdminPanel from './components/AdminPanel';
 import { fetchProducts, saveProduct, fetchCategories, saveCategory } from './firebase';
@@ -42,6 +42,7 @@ export default function App() {
   const [lang, setLang] = useState<'en' | 'kn'>('en');
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   
   const [products, setProducts] = useState<Product[]>(defaultProducts);
 
@@ -211,38 +212,89 @@ export default function App() {
             </a>
           </div>
 
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-4 mb-12 border-b border-[#f0f0f0] pb-4">
-            {filterCategories.map((cat) => {
-              // Find localized label
-              let label = cat;
-              if (cat === 'All') {
-                label = t.collection.filterAll;
-              } else {
-                const categoryObj = categories.find(c => c.en === cat);
-                if (categoryObj) {
-                  label = lang === 'en' ? categoryObj.en : categoryObj.kn;
-                } else {
-                  const sampleProduct = products.find(p => p.en.badge === cat);
-                  if (sampleProduct) {
-                    label = sampleProduct[lang].badge || cat;
-                  }
-                }
-              }
-
-              const isActive = activeCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`text-[10px] font-medium tracking-[0.2em] uppercase transition-colors px-2 py-1 ${
-                    isActive ? 'text-[#8B1C31] border-b border-[#8B1C31]' : 'text-gray-400 hover:text-[#1a1a1a]'
-                  }`}
+          {/* Category Slider */}
+          {categories.length > 0 && (
+            <div className="mb-16 max-w-xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-sm font-medium tracking-[0.2em] uppercase text-gray-500">Shop by Category</h3>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setCurrentCategoryIndex(prev => Math.max(0, prev - 1))}
+                    disabled={currentCategoryIndex === 0}
+                    className="p-2 rounded-full border border-gray-200 disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button 
+                    onClick={() => setCurrentCategoryIndex(prev => Math.min(categories.length - 1, prev + 1))}
+                    disabled={currentCategoryIndex >= categories.length - 1}
+                    className="p-2 rounded-full border border-gray-200 disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="overflow-hidden rounded-2xl">
+                <div 
+                  className="flex transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(-${currentCategoryIndex * 100}%)` }}
                 >
-                  {label}
-                </button>
-              );
-            })}
+                  {categories.map((cat, idx) => {
+                    const isActive = activeCategory === cat.en;
+                    return (
+                      <div key={cat.id} className="min-w-full p-1">
+                        <div 
+                          onClick={() => {
+                            setActiveCategory(cat.en);
+                            document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className={`relative aspect-video sm:aspect-[21/9] cursor-pointer group overflow-hidden rounded-xl border-4 transition-all ${isActive ? 'border-[#8B1C31]' : 'border-transparent hover:border-gray-200'}`}
+                        >
+                          {cat.image ? (
+                            <img src={cat.image} alt={cat.en} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                          ) : (
+                            <div className="w-full h-full bg-[#f8f6f2] flex items-center justify-center text-gray-300">
+                              <ImageIcon size={48} className="stroke-[1]" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                          <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
+                            <div>
+                              <span className="text-[10px] text-white/80 uppercase tracking-[0.2em] mb-2 block">Collection</span>
+                              <h4 className="text-white text-2xl sm:text-3xl font-serif italic tracking-wide">{lang === 'en' ? cat.en : cat.kn}</h4>
+                            </div>
+                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                              <ArrowRight size={20} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Current Active Category Pill */}
+          <div id="product-grid" className="flex items-center justify-center gap-4 mb-12">
+             <button
+               onClick={() => setActiveCategory('All')}
+               className={`text-[10px] font-medium tracking-[0.2em] uppercase transition-colors px-4 py-2 rounded-full border ${
+                 activeCategory === 'All' ? 'bg-[#8B1C31] text-white border-[#8B1C31]' : 'bg-white text-gray-500 border-gray-200 hover:border-[#8B1C31]'
+               }`}
+             >
+               {t.collection.filterAll}
+             </button>
+             {activeCategory !== 'All' && (
+               <div className="flex items-center gap-2 text-[10px] font-medium tracking-[0.2em] uppercase px-4 py-2 rounded-full bg-[#8B1C31] text-white border border-[#8B1C31]">
+                 <span>{lang === 'en' ? activeCategory : categories.find(c => c.en === activeCategory)?.kn || activeCategory}</span>
+                 <button onClick={() => setActiveCategory('All')} className="hover:text-black/50 ml-2">
+                   <X size={14} />
+                 </button>
+               </div>
+             )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

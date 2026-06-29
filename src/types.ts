@@ -2,6 +2,7 @@ export type Category = {
   id: string;
   en: string;
   kn: string;
+  image?: string;
 };
 
 export type Product = {

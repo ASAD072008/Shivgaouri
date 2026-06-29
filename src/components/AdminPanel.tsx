@@ -18,6 +18,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const categoryFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
     if (!editing) return;
@@ -88,6 +89,46 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
           ctx.drawImage(img, 0, 0, width, height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
           setEditing({ ...editing, image: dataUrl });
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCategoryImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingCategory) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const MAX_WIDTH = 600;
+        const MAX_HEIGHT = 800;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setEditingCategory({ ...editingCategory, image: dataUrl });
         }
       };
       img.src = event.target?.result as string;
@@ -170,6 +211,39 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
               </div>
               
               <div className="grid gap-5">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Category Image</label>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input 
+                      type="text" 
+                      value={editingCategory.image || ''}
+                      onChange={e => setEditingCategory({...editingCategory, image: e.target.value})}
+                      className="flex-1 border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
+                      placeholder="Image URL (https://...)"
+                    />
+                    <div className="flex items-center">
+                      <span className="text-xs text-gray-400 uppercase tracking-widest mx-2 font-medium">OR</span>
+                    </div>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      ref={categoryFileInputRef} 
+                      onChange={handleCategoryImageUpload} 
+                    />
+                    <button 
+                      onClick={() => categoryFileInputRef.current?.click()}
+                      className="bg-[#1a1a1a] text-white px-5 py-3 rounded-md text-[10px] font-medium tracking-widest uppercase hover:bg-black transition-colors flex items-center justify-center gap-2 flex-shrink-0"
+                    >
+                      <Upload size={16} /> Upload Photo
+                    </button>
+                  </div>
+                  {editingCategory.image && (
+                    <div className="mt-4 w-32 h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 relative group">
+                      <img src={editingCategory.image} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
                   {/* English Section */}
                   <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50">
@@ -420,6 +494,13 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                 {categories.map(c => (
                   <div key={c.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all bg-white group">
                     <div className="flex items-center gap-5 w-full sm:w-auto mb-4 sm:mb-0">
+                      <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        {c.image ? (
+                          <img src={c.image} alt={c.en} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={20}/></div>
+                        )}
+                      </div>
                       <div>
                         <h4 className="font-medium text-[#1a1a1a] text-sm leading-tight mb-1">{c.en}</h4>
                         <p className="text-xs text-gray-500 font-medium tracking-wide">{c.kn}</p>
