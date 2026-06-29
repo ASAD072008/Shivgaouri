@@ -1,0 +1,6 @@
+{
+  "name": "Shivgouri",
+  "description": "A premium, minimalist saree shop celebrating traditional Indian handlooms and modern grace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
