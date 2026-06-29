@@ -105,297 +105,328 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-[#8B1C31] mb-6 animate-pulse">
+      <div className="min-h-screen bg-[#F7F4EF] flex flex-col items-center justify-center">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-[#3C101B] mb-6 animate-pulse">
           <path d="M12 2C8 6 4 11 4 16C4 20.418 7.582 24 12 24C16.418 24 20 20.418 20 16C20 11 16 6 12 2Z" fill="currentColor" opacity="0.1"/>
           <path d="M12 4.5C9.5 7.5 7 11.5 7 15.5C7 18.5 9.2 21 12 21C14.8 21 17 18.5 17 15.5C17 11.5 14.5 7.5 12 4.5Z" stroke="currentColor" strokeWidth="1.2"/>
           <path d="M10.5 11.5C10.5 10 11.5 9 12.5 9C13.5 9 14.5 10 14 11.5C13 14 10 14.5 10 17C10 18.5 11 19.5 12.5 19" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
         </svg>
-        <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-medium animate-pulse">Loading / ಲೋಡ್ ಆಗುತ್ತಿದೆ...</div>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-[#3C101B]/50 font-medium animate-pulse">Loading / ಲೋಡ್ ಆಗುತ್ತಿದೆ...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white font-sans text-[#1a1a1a] selection:bg-[#8B1C31] selection:text-white">
+    <div className="min-h-screen bg-[#F7F4EF] font-sans text-[#3C101B] selection:bg-[#3C101B] selection:text-white overflow-x-hidden">
       {/* Navigation Bar */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#f0f0f0]">
+      <nav className="bg-[#3C101B] text-white w-full">
+        {/* Top bar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <div className="flex justify-between items-center h-16">
-            {/* Mobile Menu Icon */}
-            <div className="flex md:hidden items-center">
-              <button className="text-[#1a1a1a] hover:opacity-50 transition-opacity">
+            <div className="flex items-center gap-4 w-1/3">
+              <button className="md:hidden text-white hover:opacity-50 transition-opacity">
                 <Menu size={24} strokeWidth={1.5} />
               </button>
+              <button className="hidden md:flex items-center justify-center text-white hover:opacity-50">
+                <Search size={20} strokeWidth={1.5} />
+              </button>
             </div>
-
-            {/* Desktop Links (Left) */}
-            <div className="hidden md:flex gap-8 items-center text-[10px] uppercase tracking-[0.2em] font-medium">
-              <a href="#" className="text-[#1a1a1a] hover:opacity-50 transition-opacity">{t.nav.home}</a>
-              <a href="#collection" className="text-[#1a1a1a] hover:opacity-50 transition-opacity">{t.nav.collection}</a>
-            </div>
-
-            {/* Logo (Center) */}
-            <div className="flex-shrink-0 flex items-center justify-center">
-              <a href="#" className="flex flex-col items-center justify-center group">
-                {/* Abstract S-swirl/paisley icon inspired by the logo */}
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-[#8B1C31] mb-1 group-hover:scale-105 transition-transform duration-300">
-                  <path d="M12 2C8 6 4 11 4 16C4 20.418 7.582 24 12 24C16.418 24 20 20.418 20 16C20 11 16 6 12 2Z" fill="currentColor" opacity="0.1"/>
-                  <path d="M12 4.5C9.5 7.5 7 11.5 7 15.5C7 18.5 9.2 21 12 21C14.8 21 17 18.5 17 15.5C17 11.5 14.5 7.5 12 4.5Z" stroke="currentColor" strokeWidth="1.2"/>
-                  <path d="M10.5 11.5C10.5 10 11.5 9 12.5 9C13.5 9 14.5 10 14 11.5C13 14 10 14.5 10 17C10 18.5 11 19.5 12.5 19" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                </svg>
-                <span className="font-logo text-xl tracking-[0.25em] font-medium text-[#8B1C31] uppercase">
+            
+            {/* Logo */}
+            <div className="flex-1 flex justify-center w-1/3">
+              <a href="#" className="flex items-center gap-2 group">
+                <span className="font-logo text-2xl tracking-[0.1em] font-medium text-white uppercase">
                   Shivgouri
                 </span>
               </a>
             </div>
 
-            {/* Desktop Links & Icons (Right) */}
-            <div className="flex items-center space-x-6">
-              <div className="hidden md:flex gap-8 items-center mr-4 text-[10px] uppercase tracking-[0.2em] font-medium">
-                <a href="#about" className="text-[#1a1a1a] hover:opacity-50 transition-opacity">{t.nav.about}</a>
-                <a href="#contact" className="text-[#1a1a1a] hover:opacity-50 transition-opacity">{t.nav.contact}</a>
-              </div>
-              <button 
-                onClick={() => setLang(lang === 'en' ? 'kn' : 'en')}
-                className="flex items-center gap-1 text-[#8B1C31] hover:opacity-50 transition-opacity text-[10px] uppercase tracking-[0.1em] font-medium"
-              >
-                <Globe size={16} strokeWidth={1.5} />
-                <span className="hidden sm:inline">{lang === 'en' ? 'ಕನ್ನಡ' : 'EN'}</span>
+            {/* Right Icons */}
+            <div className="flex items-center justify-end gap-6 text-[11px] uppercase tracking-widest w-1/3">
+              <a href="https://www.instagram.com/shivgouri_silksarees_gokak" target="_blank" rel="noopener noreferrer" className="hidden md:flex items-center gap-2 hover:opacity-70 transition-opacity">
+                <span>Instagram</span>
+              </a>
+              <button onClick={() => setLang(lang === 'en' ? 'kn' : 'en')} className="hover:opacity-70 transition-opacity">
+                 {lang === 'en' ? 'ಕನ್ನಡ' : 'EN'}
               </button>
-              <button className="text-[#1a1a1a] hover:opacity-50 transition-opacity hidden sm:block">
-                <Search size={20} strokeWidth={1.5} />
-              </button>
-              <button className="text-[#1a1a1a] hover:opacity-50 transition-opacity">
+              <button className="hover:opacity-70 transition-opacity flex items-center gap-2">
                 <ShoppingBag size={20} strokeWidth={1.5} />
+                <span className="hidden sm:inline">Rs. 0.00</span>
               </button>
             </div>
+          </div>
+          
+          {/* Bottom Nav Links */}
+          <div className="hidden md:flex justify-center items-center gap-8 pb-4 text-[10px] uppercase tracking-widest font-medium text-white/80">
+             {filterCategories.slice(0, 5).map(cat => (
+               <button 
+                 key={cat} 
+                 onClick={() => {
+                   setActiveCategory(cat);
+                   document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
+                 }}
+                 className="hover:text-white transition-colors"
+               >
+                 {cat === 'All' ? t.collection.filterAll : cat}
+               </button>
+             ))}
+             <a href="#about" className="hover:text-white transition-colors">{t.nav.about}</a>
+             <a href="#contact" className="hover:text-white transition-colors">{t.nav.contact}</a>
           </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center bg-white overflow-hidden py-10">
-        {/* Subtle background image/texture for the hero */}
-        <div 
-          className="absolute inset-0 opacity-20 mix-blend-multiply"
-          style={{
-            backgroundImage: 'url("https://images.unsplash.com/photo-1584286595398-a59f21d313f5?auto=format&fit=crop&q=80&w=2000")',
-            backgroundPosition: 'center',
-            backgroundSize: 'cover'
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent" />
-        
-        <div className="relative z-10 text-center px-4 max-w-3xl mx-auto mt-20 flex flex-col items-center">
-          <span className="text-[11px] font-medium tracking-[0.3em] uppercase text-gray-400 mb-6 block">{t.hero.pre}</span>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif text-[#8B1C31] mb-6 leading-tight italic tracking-tight">
-            {t.hero.title1} <br /> <span className="font-light">{t.hero.title2}</span>
-          </h1>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-gray-400 max-w-xl mx-auto leading-relaxed mb-10">
-            {t.hero.desc}
-          </p>
-          <div className="w-12 h-px bg-[#8B1C31] mb-10 opacity-30"></div>
-          <a href="#collection" className="inline-flex items-center space-x-3 border-b-2 border-transparent pb-1 text-[10px] tracking-[0.2em] uppercase font-medium text-[#8B1C31] hover:opacity-50 transition-opacity">
-            <span>{t.hero.explore}</span>
-            <ArrowRight size={16} strokeWidth={1.5} />
-          </a>
+      <section className="flex flex-col md:flex-row min-h-[70vh] bg-[#F7F4EF]">
+        {/* Left Image */}
+        <div className="w-full md:w-[55%] relative min-h-[50vh] md:min-h-full">
+           <img 
+             src="https://images.unsplash.com/photo-1610030469983-9b85c8e03bc0?auto=format&fit=crop&q=80&w=1200"
+             alt="Shivgouri Elegance"
+             className="absolute inset-0 w-full h-full object-cover"
+           />
+        </div>
+        {/* Right Content */}
+        <div className="w-full md:w-[45%] flex flex-col justify-center items-center p-12 text-center">
+           <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#3C101B] mb-6 leading-tight">
+             Where elegance is <br/><span className="italic">quiet.</span>
+           </h1>
+           <p className="text-[12px] uppercase tracking-widest text-[#3C101B]/80 mb-10 max-w-xs leading-relaxed">
+             From the loom. To the woman who knows the difference.
+           </p>
+           <button 
+             onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}
+             className="bg-[#3C101B] text-white px-8 py-3 rounded-full text-[10px] uppercase tracking-widest font-medium hover:bg-[#2A0B13] transition-colors"
+           >
+             Shop Collection
+           </button>
         </div>
       </section>
 
-      {/* Product Grid (Saree Catalog) */}
-      <section id="collection" className="py-24 sm:py-32 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 space-y-6 md:space-y-0">
-            <div>
-              <h2 className="font-serif text-3xl sm:text-4xl text-[#8B1C31] mb-4 italic tracking-tight">{t.collection.title}</h2>
-              <p className="text-[11px] uppercase tracking-[0.3em] text-gray-400 max-w-md leading-relaxed">{t.collection.desc}</p>
-            </div>
-            <a href="#" className="text-[10px] font-medium tracking-[0.2em] uppercase border-b border-[#f0f0f0] pb-1 hover:border-[#8B1C31] transition-colors text-[#8B1C31]">
-              {t.collection.viewAll}
-            </a>
-          </div>
+      {/* Curation Section */}
+      <section className="py-24 px-6 max-w-7xl mx-auto text-center md:text-left">
+         <div className="max-w-3xl mx-auto md:mx-0 border-l-2 border-[#A28B55] pl-6 mb-16">
+           <h2 className="font-serif text-3xl md:text-4xl text-[#3C101B] mb-4 italic">
+             Not everything woven deserves to be worn.
+           </h2>
+           <p className="text-[#3C101B]/70 font-serif text-lg md:text-xl mb-6">
+             For generations, we have chosen — so you never have to settle.
+           </p>
+           <p className="text-[10px] uppercase tracking-[0.2em] text-[#A28B55] font-medium">
+             this is curation, not commerce.
+           </p>
+         </div>
 
-          {/* Category Slider */}
-          {categories.length > 0 && (
-            <div className="mb-16 max-w-xl mx-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-medium tracking-[0.2em] uppercase text-gray-500">Shop by Category</h3>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setCurrentCategoryIndex(prev => Math.max(0, prev - 1))}
-                    disabled={currentCategoryIndex === 0}
-                    className="p-2 rounded-full border border-gray-200 disabled:opacity-50 hover:bg-gray-50 transition-colors"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <button 
-                    onClick={() => setCurrentCategoryIndex(prev => Math.min(categories.length - 1, prev + 1))}
-                    disabled={currentCategoryIndex >= categories.length - 1}
-                    className="p-2 rounded-full border border-gray-200 disabled:opacity-50 hover:bg-gray-50 transition-colors"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="overflow-hidden rounded-2xl">
-                <div 
-                  className="flex transition-transform duration-500 ease-in-out"
-                  style={{ transform: `translateX(-${currentCategoryIndex * 100}%)` }}
-                >
-                  {categories.map((cat, idx) => {
-                    const isActive = activeCategory === cat.en;
-                    return (
-                      <div key={cat.id} className="min-w-full p-1">
-                        <div 
-                          onClick={() => {
-                            setActiveCategory(cat.en);
-                            document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth' });
-                          }}
-                          className={`relative aspect-video sm:aspect-[21/9] cursor-pointer group overflow-hidden rounded-xl border-4 transition-all ${isActive ? 'border-[#8B1C31]' : 'border-transparent hover:border-gray-200'}`}
-                        >
-                          {cat.image ? (
-                            <img src={cat.image} alt={cat.en} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                          ) : (
-                            <div className="w-full h-full bg-[#f8f6f2] flex items-center justify-center text-gray-300">
-                              <ImageIcon size={48} className="stroke-[1]" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                          <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
-                            <div>
-                              <span className="text-[10px] text-white/80 uppercase tracking-[0.2em] mb-2 block">Collection</span>
-                              <h4 className="text-white text-2xl sm:text-3xl font-serif italic tracking-wide">{lang === 'en' ? cat.en : cat.kn}</h4>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                              <ArrowRight size={20} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Current Active Category Pill */}
-          <div id="product-grid" className="flex items-center justify-center gap-4 mb-12">
-             <button
-               onClick={() => setActiveCategory('All')}
-               className={`text-[10px] font-medium tracking-[0.2em] uppercase transition-colors px-4 py-2 rounded-full border ${
-                 activeCategory === 'All' ? 'bg-[#8B1C31] text-white border-[#8B1C31]' : 'bg-white text-gray-500 border-gray-200 hover:border-[#8B1C31]'
-               }`}
+         {/* Category Feature Slider (1 at a time) */}
+         <div className="relative group/catslider mt-12 mb-16 mx-auto max-w-4xl">
+           <div className="overflow-hidden rounded-sm relative bg-[#3C101B]">
+             <div 
+               className="flex transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
+               style={{ transform: `translateX(-${currentCategoryIndex * 100}%)` }}
              >
-               {t.collection.filterAll}
-             </button>
-             {activeCategory !== 'All' && (
-               <div className="flex items-center gap-2 text-[10px] font-medium tracking-[0.2em] uppercase px-4 py-2 rounded-full bg-[#8B1C31] text-white border border-[#8B1C31]">
-                 <span>{lang === 'en' ? activeCategory : categories.find(c => c.en === activeCategory)?.kn || activeCategory}</span>
-                 <button onClick={() => setActiveCategory('All')} className="hover:text-black/50 ml-2">
-                   <X size={14} />
+               {categories.map((cat) => (
+                 <div key={cat.id} className="min-w-full flex-shrink-0 relative aspect-[16/9] md:aspect-[21/9]">
+                   <div 
+                     onClick={() => {
+                       setActiveCategory(cat.en);
+                       document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
+                     }}
+                     className="w-full h-full cursor-pointer group"
+                   >
+                     {cat.image ? (
+                       <img src={cat.image} alt={cat.en} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-1000" />
+                     ) : (
+                       <div className="w-full h-full flex items-center justify-center text-white/20">
+                         <ImageIcon size={64} strokeWidth={1} />
+                       </div>
+                     )}
+                     <div className="absolute inset-0 bg-gradient-to-t from-[#3C101B]/90 via-transparent to-transparent pointer-events-none" />
+                     <div className="absolute bottom-8 left-8 right-8 flex flex-col md:flex-row items-start md:items-end justify-between">
+                       <div>
+                         <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-3 block font-medium">Curated Collection</span>
+                         <h3 className="font-serif text-3xl md:text-5xl text-white mb-2">{lang === 'en' ? cat.en : cat.kn}</h3>
+                       </div>
+                       <button className="hidden md:flex items-center gap-2 text-[11px] uppercase tracking-widest text-white/80 hover:text-white transition-colors pb-2">
+                         Explore Collection <ArrowRight size={16} />
+                       </button>
+                     </div>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           </div>
+           
+           {/* Slider Navigation */}
+           {categories.length > 1 && (
+             <div className="flex justify-between items-center mt-6">
+               <div className="text-[11px] font-medium text-[#3C101B]/50 font-serif">
+                 {String(currentCategoryIndex + 1).padStart(2, '0')} / {String(categories.length).padStart(2, '0')}
+               </div>
+               <div className="flex gap-2">
+                 <button 
+                   onClick={() => setCurrentCategoryIndex(prev => Math.max(0, prev - 1))}
+                   disabled={currentCategoryIndex === 0}
+                   className="w-10 h-10 border border-[#3C101B]/20 rounded-full flex items-center justify-center text-[#3C101B] disabled:opacity-30 hover:bg-[#3C101B] hover:text-white transition-colors"
+                 >
+                   <ChevronLeft size={18} />
+                 </button>
+                 <button 
+                   onClick={() => setCurrentCategoryIndex(prev => Math.min(categories.length - 1, prev + 1))}
+                   disabled={currentCategoryIndex === categories.length - 1}
+                   className="w-10 h-10 border border-[#3C101B]/20 rounded-full flex items-center justify-center text-[#3C101B] disabled:opacity-30 hover:bg-[#3C101B] hover:text-white transition-colors"
+                 >
+                   <ChevronRight size={18} />
                  </button>
                </div>
-             )}
+             </div>
+           )}
+         </div>
+      </section>
+
+      {/* Main Collection / Sliders */}
+      <section id="collection" className="py-20 bg-[#F3EFE8]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#A28B55] font-medium mb-4">The Noteworthy</p>
+          <h2 className="font-serif text-4xl md:text-5xl text-[#3C101B] italic mb-6">
+             Shivgouri by Signatures
+          </h2>
+          <p className="text-[#3C101B]/80 font-serif text-lg max-w-2xl mb-12">
+             Lustrous silks, intricate zari — every piece chosen at the source and held to one standard. Finest. Reserved and preserved.
+          </p>
+
+          {/* Category Tabs */}
+          <div className="flex overflow-x-auto gap-8 border-b border-[#3C101B]/10 pb-4 mb-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+             <button 
+               onClick={() => setActiveCategory('All')}
+               className={`whitespace-nowrap flex items-baseline gap-2 transition-colors ${activeCategory === 'All' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
+             >
+               <span className="text-[10px] tracking-widest">00</span>
+               <span className="font-serif text-lg">{t.collection.filterAll}</span>
+             </button>
+             {categories.map((cat, idx) => (
+               <button 
+                 key={cat.id}
+                 onClick={() => setActiveCategory(cat.en)}
+                 className={`whitespace-nowrap flex items-baseline gap-2 transition-colors ${activeCategory === cat.en ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
+               >
+                 <span className="text-[10px] tracking-widest">{String(idx + 1).padStart(2, '0')}</span>
+                 <span className="font-serif text-lg">{lang === 'en' ? cat.en : cat.kn}</span>
+               </button>
+             ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => {
-              const pData = product[lang];
-              const message = `Hello Shivgouri, I am interested in purchasing the ${pData.name} (${product.price}). Is it currently available in stock?`;
-              const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+          <div className="flex justify-end mb-6">
+            <button 
+              onClick={() => setActiveCategory('All')}
+              className="text-[10px] uppercase tracking-widest font-medium flex items-center gap-1 text-[#A28B55] hover:opacity-70 transition-opacity"
+            >
+              View All <ArrowRight size={14} />
+            </button>
+          </div>
 
-              return (
-                <div key={product.id} className="group flex flex-col cursor-pointer">
-                  {/* Image Container */}
-                  <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#f8f6f2] border border-[#f0f0f0] mb-4 flex items-center justify-center">
-                    {product.image ? (
-                      <img
-                        src={product.image}
-                        alt={pData.name}
-                        className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-in-out"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300">
-                        <ShoppingBag size={48} className="stroke-[1]" />
-                      </div>
-                    )}
-                    <div className="absolute top-3 left-3">
-                      <span className="text-[8px] tracking-widest uppercase bg-white px-2 py-1 border border-gray-100 text-[#8B1C31] font-medium">
-                        {pData.badge}
-                      </span>
+          {/* Horizontal Product List */}
+          <div className="relative group/slider">
+            <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" id="slider">
+              {filteredProducts.length > 0 ? filteredProducts.map(product => {
+                const pData = product[lang];
+                const message = `Hello Shivgouri, I am interested in purchasing the ${pData.name} (${product.price}).`;
+                const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+                return (
+                  <div key={product.id} className="min-w-[280px] md:min-w-[320px] snap-start flex flex-col group/item cursor-pointer">
+                    <a href={waLink} target="_blank" rel="noopener noreferrer" className="block relative aspect-[4/5] bg-[#EAE5DB] mb-4 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                       {product.image ? (
+                         <img src={product.image} alt={pData.name} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-700" />
+                       ) : (
+                         <div className="w-full h-full flex items-center justify-center text-[#3C101B]/20">
+                           <ImageIcon size={48} strokeWidth={1} />
+                         </div>
+                       )}
+                    </a>
+                    <div className="flex justify-between items-start gap-4 px-1">
+                      <h3 className="font-sans font-medium text-[#3C101B] text-sm md:text-sm leading-snug">{pData.name}</h3>
+                      <p className="text-[#A28B55] text-xs md:text-sm whitespace-nowrap font-medium">{product.price}</p>
                     </div>
                   </div>
-
-                  {/* Product Details */}
-                  <div className="flex flex-col flex-grow">
-                    <h3 className="text-[12px] font-serif text-[#1a1a1a] mb-1">{pData.name}</h3>
-                    <p className="text-[11px] text-gray-500 mb-4">{product.price}</p>
-                    
-                    <div className="mt-auto">
-                      <a
-                        href={waLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block w-full bg-[#8B1C31] text-white text-[9px] uppercase tracking-[0.2em] py-3 text-center transition-all hover:bg-[#6A1525]"
-                      >
-                        {t.collection.orderBtn}
-                      </a>
-                    </div>
-                  </div>
+                );
+              }) : (
+                <div className="w-full text-center py-20 text-[#3C101B]/50 font-serif italic text-lg">
+                  No products found in this category.
                 </div>
-              );
-            })}
+              )}
+            </div>
+            {/* Scroll buttons */}
+            <button 
+              onClick={() => { document.getElementById('slider')?.scrollBy({ left: 340, behavior: 'smooth' }) }}
+              className="absolute right-2 top-[40%] -translate-y-1/2 w-12 h-12 bg-white/90 shadow-md rounded-full flex items-center justify-center text-[#3C101B] opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-white"
+            >
+              <ChevronRight size={24} />
+            </button>
+            <button 
+              onClick={() => { document.getElementById('slider')?.scrollBy({ left: -340, behavior: 'smooth' }) }}
+              className="absolute left-2 top-[40%] -translate-y-1/2 w-12 h-12 bg-white/90 shadow-md rounded-full flex items-center justify-center text-[#3C101B] opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-white"
+            >
+              <ChevronLeft size={24} />
+            </button>
           </div>
         </div>
       </section>
 
-      {/* About Teaser */}
-      <section id="about" className="py-24 bg-[#f8f6f2] border-t border-[#f0f0f0]">
-        <div className="max-w-4xl mx-auto px-4 text-center flex flex-col items-center">
-          <h2 className="font-serif text-3xl mb-8 italic tracking-tight text-[#8B1C31]">{t.about.title}</h2>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-gray-500 max-w-2xl mx-auto leading-relaxed mb-8">
-            {t.about.desc}
-          </p>
-          <div className="w-12 h-px bg-[#8B1C31] mb-8 opacity-30"></div>
-          <img 
-            src="https://images.unsplash.com/photo-1605705663782-b7bce3e8d9b1?auto=format&fit=crop&q=80&w=1200" 
-            alt="Weaving process" 
-            className="w-full h-64 object-cover object-center mb-0 border border-[#f0f0f0]"
-          />
+      {/* Gallery / Boutique Visit Section (Dark) */}
+      <section id="about" className="bg-[#3C101B] text-white py-24">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center gap-16">
+          <div className="flex-1 text-center md:text-left">
+             <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-4 block font-medium">Visit the Gallery</span>
+             <h2 className="font-serif text-3xl md:text-4xl italic mb-6 leading-tight">
+               Experience the legacy of Shivgouri.
+             </h2>
+             <p className="text-white/70 text-sm md:text-base leading-relaxed mb-10 max-w-md mx-auto md:mx-0">
+               {t.about.desc}
+             </p>
+             <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-6 text-[10px] uppercase tracking-widest text-white/70">
+               <a href="https://maps.app.goo.gl/Xmbb7zuQgSnhyt58A" target="_blank" rel="noopener noreferrer" className="bg-transparent px-6 py-3 border border-white/20 hover:bg-white/10 transition-colors">Get Directions</a>
+               <span>{waNumber}</span>
+             </div>
+          </div>
+          <div className="flex-1 w-full relative aspect-[4/3] md:aspect-[3/2]">
+             <img src="https://images.unsplash.com/photo-1605705663782-b7bce3e8d9b1?auto=format&fit=crop&q=80&w=1200" className="w-full h-full object-cover opacity-90 shadow-2xl" alt="Boutique" />
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer id="contact" className="bg-white border-t border-[#f0f0f0] py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-8 md:space-y-0">
-            <div className="text-center md:text-left flex flex-col items-center md:items-start">
-              <span className="font-logo text-xl tracking-[0.25em] uppercase text-[#8B1C31] mb-4">Shivgouri</span>
-              <a href="https://maps.app.goo.gl/Xmbb7zuQgSnhyt58A" target="_blank" rel="noopener noreferrer" className="text-[10px] uppercase tracking-[0.15em] text-gray-400 mb-2 hover:text-[#8B1C31] transition-colors text-center md:text-left">
-                {t.footer.address}<br/>{t.footer.city}
-              </a>
-            </div>
-            
-            <div className="text-center md:text-right max-w-sm">
-              <p className="text-[10px] uppercase tracking-[0.15em] text-gray-400 italic leading-relaxed">
-                {t.footer.visit}
-              </p>
-            </div>
-          </div>
-          
-          <div className="mt-16 pt-8 border-t border-[#f0f0f0] flex flex-col sm:flex-row justify-between items-center space-y-6 sm:space-y-0">
-            <p className="text-[10px] uppercase tracking-[0.15em] text-gray-400">&copy; {new Date().getFullYear()} Shivgouri. {t.footer.rights}</p>
-            <div className="flex space-x-8 text-[10px] uppercase tracking-[0.15em] text-gray-400 font-medium items-center">
-              <a href="https://www.instagram.com/shivgouri_silksarees_gokak?igsh=MXRibXhja3AwbmZhNQ==" target="_blank" rel="noopener noreferrer" className="hover:opacity-50 transition-opacity">Instagram</a>
-              <button onClick={() => setIsAdminOpen(true)} className="hover:text-[#8B1C31] transition-colors ml-4" title="Admin Login">
-                <Lock size={12} strokeWidth={2} />
-              </button>
-            </div>
-          </div>
+      <footer id="contact" className="bg-[#2A0B13] text-white pt-24 pb-12 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+           <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-white/80">Register Address</h4>
+           <p className="text-[11px] uppercase tracking-widest text-white/50 mb-8 max-w-lg mx-auto leading-relaxed">
+             {t.footer.address}, {t.footer.city} <br/>
+             Contact us : +91 {waNumber.replace('91', '')}
+           </p>
+
+           <div className="w-full h-px bg-white/10 my-16 max-w-4xl mx-auto" />
+
+           <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-[#A28B55]">Subscribe to our emails</h4>
+           <h2 className="font-serif text-3xl md:text-4xl italic mb-6">Join Our Journey</h2>
+           <p className="text-sm text-white/60 mb-10 max-w-md mx-auto">
+             Be the first to explore special offers, exclusive discounts, and all our latest updates.
+           </p>
+
+           <div className="flex flex-col sm:flex-row max-w-md mx-auto gap-4 mb-24">
+             <input 
+               type="email" 
+               placeholder="Email" 
+               className="flex-1 bg-white text-[#3C101B] px-6 py-4 rounded-sm focus:outline-none placeholder:text-[#3C101B]/40 text-sm" 
+             />
+             <button className="bg-[#F7F4EF] text-[#3C101B] px-8 py-4 rounded-sm text-[11px] font-bold uppercase tracking-widest hover:bg-white transition-colors">
+               Subscribe
+             </button>
+           </div>
+
+           <div className="flex flex-col sm:flex-row justify-between items-center text-[10px] uppercase tracking-widest text-white/30">
+             <p>&copy; {new Date().getFullYear()} Shivgouri Silk and Saris.</p>
+             <button onClick={() => setIsAdminOpen(true)} className="hover:text-white mt-4 sm:mt-0 flex items-center gap-2 transition-colors">
+               Admin <Lock size={12} />
+             </button>
+           </div>
         </div>
       </footer>
 
