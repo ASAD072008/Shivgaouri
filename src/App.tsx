@@ -12,14 +12,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Search, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X } from 'lucide-react';
 import { Product } from './types';
 import AdminPanel from './components/AdminPanel';
-import { fetchProducts, saveProduct, fetchCategories, saveCategory } from './firebase';
-
-export const defaultProducts: Product[] = [
-  { id: 1, price: '₹4,500', image: 'https://images.unsplash.com/photo-1610030469983-9b85c8e03bc0?auto=format&fit=crop&q=80&w=800', en: { name: 'Pure Kanjeevaram Silk Saree', badge: 'Silk' }, kn: { name: 'ಶುದ್ಧ ಕಾಂಜೀವರಂ ರೇಷ್ಮೆ ಸೀರೆ', badge: 'ರೇಷ್ಮೆ' } },
-  { id: 2, price: '₹3,200', image: 'https://images.unsplash.com/photo-1583391733959-b15124b87cea?auto=format&fit=crop&q=80&w=800', en: { name: 'Elegant Banarasi Chanderi Saree', badge: 'Chanderi' }, kn: { name: 'ಸೊಗಸಾದ ಬನಾರಸಿ ಚಂದೇರಿ ಸೀರೆ', badge: 'ಚಂದೇರಿ' } },
-  { id: 3, price: '₹2,800', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=800', en: { name: 'Premium Organza Floral Saree', badge: 'Organza' }, kn: { name: 'ಪ್ರೀಮಿಯಂ ಆರ್ಗನ್ಜಾ ಹೂವಿನ ಸೀರೆ', badge: 'ಆರ್ಗನ್ಜಾ' } },
-  { id: 4, price: '₹1,999', image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&q=80&w=800', en: { name: 'Classic Cotton Linen Saree', badge: 'Linen' }, kn: { name: 'ಕ್ಲಾಸಿಕ್ ಕಾಟನ್ ಲಿನೆನ್ ಸೀರೆ', badge: 'ಲಿನೆನ್' } },
-];
+import { fetchProducts, fetchCategories } from './firebase';
 
 const content = {
   en: {
@@ -97,26 +90,6 @@ export default function App() {
         
         let finalCats = fetchedCats;
         let finalProds = fetchedProds;
-
-        if (fetchedProds.length === 0) {
-          finalProds = defaultProducts;
-          for (const prod of defaultProducts) {
-            await saveProduct(prod);
-          }
-        }
-
-        if (fetchedCats.length === 0) {
-          const defaultCats: import('./types').Category[] = [];
-          finalProds.forEach(p => {
-            if (!defaultCats.find(c => c.en === p.en.badge)) {
-              defaultCats.push({ id: p.en.badge, en: p.en.badge, kn: p.kn.badge });
-            }
-          });
-          finalCats = defaultCats;
-          for (const cat of defaultCats) {
-            await saveCategory(cat);
-          }
-        }
 
         setCategories(finalCats);
         setProducts(finalProds);
@@ -495,8 +468,8 @@ export default function App() {
                <span>{waNumber}</span>
              </div>
           </div>
-          <div className="flex-1 w-full relative aspect-[4/3] md:aspect-[3/2]">
-             <img referrerPolicy="no-referrer" src="https://images.unsplash.com/photo-1605705663782-b7bce3e8d9b1?auto=format&fit=crop&q=80&w=1200" className="w-full h-full object-cover opacity-90 shadow-2xl" alt="Boutique" />
+          <div className="flex-1 w-full relative aspect-[4/3] md:aspect-[3/2] bg-[#EAE5DB]/10 flex items-center justify-center text-white/20">
+             <ImageIcon size={64} strokeWidth={1} />
           </div>
         </div>
       </section>

@@ -13,7 +13,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = initializeFirestore(app, {}, 'ai-studio-shivgouri-7a968f7b-82ef-4878-874e-59efd0ee8136');
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true
+}, 'ai-studio-shivgouri-7a968f7b-82ef-4878-874e-59efd0ee8136');
 export const auth = getAuth(app);
 
 export enum OperationType {
