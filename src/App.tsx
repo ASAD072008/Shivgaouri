@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Search, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X } from 'lucide-react';
 import { Product } from './types';
 import AdminPanel from './components/AdminPanel';
@@ -38,16 +38,56 @@ const content = {
   }
 };
 
+type CartItem = { product: Product; quantity: number };
+
 export default function App() {
   const [lang, setLang] = useState<'en' | 'kn'>('en');
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   const [products, setProducts] = useState<Product[]>([]);
 
   const [categories, setCategories] = useState<import('./types').Category[]>([]);
+
+  const dragStartX = useRef<number | null>(null);
+  const dragOffset = useRef<number>(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+
+  const handleDragStart = (clientX: number) => {
+    dragStartX.current = clientX;
+    dragOffset.current = 0;
+    setIsSwiping(true);
+  };
+
+  const handleDragMove = (clientX: number) => {
+    if (dragStartX.current === null) return;
+    const diff = clientX - dragStartX.current;
+    dragOffset.current = diff;
+    setSwipeOffset(diff);
+  };
+
+  const handleDragEnd = () => {
+    if (dragStartX.current === null) return;
+    const threshold = 50; // min swipe distance in px
+    if (dragOffset.current < -threshold) {
+      // Swiped left -> next
+      setCurrentCategoryIndex(prev => Math.min(categories.length - 1, prev + 1));
+    } else if (dragOffset.current > threshold) {
+      // Swiped right -> prev
+      setCurrentCategoryIndex(prev => Math.max(0, prev - 1));
+    }
+    dragStartX.current = null;
+    dragOffset.current = 0;
+    setIsSwiping(false);
+    setSwipeOffset(0);
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -92,6 +132,17 @@ export default function App() {
   const waNumber = '918329732432';
   const t = content[lang];
 
+  const addToCart = (product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.product.id === product.id);
+      if (existing) {
+        return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+    setIsCartOpen(true);
+  };
+
   // Dynamic categories based on explicit categories or fallback to current products
   const englishBadges = categories.length > 0 
     ? categories.map(c => c.en) 
@@ -99,9 +150,12 @@ export default function App() {
     
   const filterCategories = ['All', ...englishBadges];
   
-  const filteredProducts = activeCategory === 'All' 
-    ? products 
-    : products.filter(p => p.en.badge === activeCategory);
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = activeCategory === 'All' || p.en.badge === activeCategory;
+    const matchesSearch = p.en.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          p.kn.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   if (isLoading) {
     return (
@@ -122,24 +176,64 @@ export default function App() {
       <nav className="bg-[#3C101B] text-white w-full">
         {/* Top bar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-16 relative">
             <div className="flex items-center gap-4 w-1/3">
               <button className="md:hidden text-white hover:opacity-50 transition-opacity">
                 <Menu size={24} strokeWidth={1.5} />
               </button>
-              <button className="hidden md:flex items-center justify-center text-white hover:opacity-50">
-                <Search size={20} strokeWidth={1.5} />
-              </button>
+              {!isSearchOpen && (
+                <button onClick={() => setIsSearchOpen(true)} className="md:hidden text-white hover:opacity-50 transition-opacity">
+                  <Search size={20} strokeWidth={1.5} />
+                </button>
+              )}
+              {isSearchOpen ? (
+                <div className="hidden md:flex items-center gap-2 bg-white/10 rounded-full px-3 py-1.5 w-48 lg:w-64">
+                  <Search size={16} strokeWidth={1.5} className="text-white/50" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search..."
+                    className="bg-transparent border-none outline-none text-white text-[11px] uppercase tracking-widest placeholder:text-white/50 w-full"
+                    autoFocus
+                  />
+                  <button onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }} className="text-white/50 hover:text-white">
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setIsSearchOpen(true)} className="hidden md:flex items-center justify-center text-white hover:opacity-50 transition-opacity">
+                  <Search size={20} strokeWidth={1.5} />
+                </button>
+              )}
             </div>
             
             {/* Logo */}
-            <div className="flex-1 flex justify-center w-1/3">
+            <div className={`flex-1 flex justify-center w-1/3 transition-opacity ${isSearchOpen ? 'opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto' : 'opacity-100'}`}>
               <a href="#" className="flex items-center gap-2 group">
                 <span className="font-logo text-2xl tracking-[0.1em] font-medium text-white uppercase">
                   Shivgouri
                 </span>
               </a>
             </div>
+
+            {/* Mobile Search Overlay */}
+            {isSearchOpen && (
+              <div className="absolute inset-0 bg-[#3C101B] flex md:hidden items-center px-4 z-10">
+                <Search size={18} strokeWidth={1.5} className="text-white/50 mr-3" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="bg-transparent border-none outline-none text-white text-[11px] uppercase tracking-widest placeholder:text-white/50 w-full"
+                  autoFocus
+                />
+                <button onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }} className="text-white ml-3">
+                  <X size={20} />
+                </button>
+              </div>
+            )}
 
             {/* Right Icons */}
             <div className="flex items-center justify-end gap-6 text-[11px] uppercase tracking-widest w-1/3">
@@ -149,9 +243,9 @@ export default function App() {
               <button onClick={() => setLang(lang === 'en' ? 'kn' : 'en')} className="hover:opacity-70 transition-opacity">
                  {lang === 'en' ? 'ಕನ್ನಡ' : 'EN'}
               </button>
-              <button className="hover:opacity-70 transition-opacity flex items-center gap-2">
+              <button onClick={() => setIsCartOpen(true)} className="hover:opacity-70 transition-opacity flex items-center gap-2">
                 <ShoppingBag size={20} strokeWidth={1.5} />
-                <span className="hidden sm:inline">Rs. 0.00</span>
+                <span className="hidden sm:inline">Cart ({cart.length})</span>
               </button>
             </div>
           </div>
@@ -179,9 +273,9 @@ export default function App() {
       {/* Hero Section */}
       <section className="flex flex-col md:flex-row min-h-[70vh] bg-[#F7F4EF]">
         {/* Left Image */}
-        <div className="w-full md:w-[55%] relative min-h-[50vh] md:min-h-full">
+        <div className="w-full md:w-[55%] relative h-[50vh] md:h-auto md:flex-1">
            <img 
-             src="https://images.unsplash.com/photo-1610030469983-9b85c8e03bc0?auto=format&fit=crop&q=80&w=1200"
+             src="/853180.jpg"
              alt="Shivgouri Elegance"
              className="absolute inset-0 w-full h-full object-cover"
            />
@@ -221,8 +315,19 @@ export default function App() {
          <div className="relative group/catslider mt-12 mb-16 mx-auto max-w-4xl">
            <div className="overflow-hidden rounded-sm relative bg-[#3C101B]">
              <div 
-               className="flex transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
-               style={{ transform: `translateX(-${currentCategoryIndex * 100}%)` }}
+               className={`flex cursor-grab active:cursor-grabbing ${isSwiping ? '' : 'transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]'}`}
+               style={{ transform: `translateX(calc(-${currentCategoryIndex * 100}% + ${swipeOffset}px))` }}
+               onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
+               onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
+               onTouchEnd={handleDragEnd}
+               onMouseDown={(e) => handleDragStart(e.clientX)}
+               onMouseMove={(e) => {
+                 if (dragStartX.current !== null) {
+                   handleDragMove(e.clientX);
+                 }
+               }}
+               onMouseUp={handleDragEnd}
+               onMouseLeave={handleDragEnd}
              >
                {categories.map((cat) => (
                  <div key={cat.id} className="min-w-full flex-shrink-0 relative aspect-[16/9] md:aspect-[21/9]">
@@ -234,7 +339,7 @@ export default function App() {
                      className="w-full h-full cursor-pointer group"
                    >
                      {cat.image ? (
-                       <img src={cat.image} alt={cat.en} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-1000" />
+                       <img referrerPolicy="no-referrer" src={cat.image} alt={cat.en} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-1000" />
                      ) : (
                        <div className="w-full h-full flex items-center justify-center text-white/20">
                          <ImageIcon size={64} strokeWidth={1} />
@@ -256,27 +361,21 @@ export default function App() {
              </div>
            </div>
            
-           {/* Slider Navigation */}
+           {/* Slider Navigation Dots */}
            {categories.length > 1 && (
              <div className="flex justify-between items-center mt-6">
                <div className="text-[11px] font-medium text-[#3C101B]/50 font-serif">
                  {String(currentCategoryIndex + 1).padStart(2, '0')} / {String(categories.length).padStart(2, '0')}
                </div>
-               <div className="flex gap-2">
-                 <button 
-                   onClick={() => setCurrentCategoryIndex(prev => Math.max(0, prev - 1))}
-                   disabled={currentCategoryIndex === 0}
-                   className="w-10 h-10 border border-[#3C101B]/20 rounded-full flex items-center justify-center text-[#3C101B] disabled:opacity-30 hover:bg-[#3C101B] hover:text-white transition-colors"
-                 >
-                   <ChevronLeft size={18} />
-                 </button>
-                 <button 
-                   onClick={() => setCurrentCategoryIndex(prev => Math.min(categories.length - 1, prev + 1))}
-                   disabled={currentCategoryIndex === categories.length - 1}
-                   className="w-10 h-10 border border-[#3C101B]/20 rounded-full flex items-center justify-center text-[#3C101B] disabled:opacity-30 hover:bg-[#3C101B] hover:text-white transition-colors"
-                 >
-                   <ChevronRight size={18} />
-                 </button>
+               <div className="flex gap-1.5">
+                 {categories.map((_, idx) => (
+                   <button
+                     key={idx}
+                     onClick={() => setCurrentCategoryIndex(idx)}
+                     className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentCategoryIndex ? 'w-6 bg-[#3C101B]' : 'w-1.5 bg-[#3C101B]/20'}`}
+                     aria-label={`Go to slide ${idx + 1}`}
+                   />
+                 ))}
                </div>
              </div>
            )}
@@ -332,16 +431,25 @@ export default function App() {
                 const message = `Hello Shivgouri, I am interested in purchasing the ${pData.name} (${product.price}).`;
                 const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
                 return (
-                  <div key={product.id} className="min-w-[280px] md:min-w-[320px] snap-start flex flex-col group/item cursor-pointer">
-                    <a href={waLink} target="_blank" rel="noopener noreferrer" className="block relative aspect-[4/5] bg-[#EAE5DB] mb-4 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <div key={product.id} className="min-w-[280px] md:min-w-[320px] snap-start flex flex-col group/item">
+                    <div className="relative aspect-[4/5] bg-[#EAE5DB] mb-4 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                        {product.image ? (
-                         <img src={product.image} alt={pData.name} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-700" />
+                         <img referrerPolicy="no-referrer" src={product.image} alt={pData.name} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-700" />
                        ) : (
                          <div className="w-full h-full flex items-center justify-center text-[#3C101B]/20">
                            <ImageIcon size={48} strokeWidth={1} />
                          </div>
                        )}
-                    </a>
+                       {/* Add to Cart Overlay */}
+                       <div className="absolute bottom-4 left-4 right-4 translate-y-8 opacity-0 group-hover/item:translate-y-0 group-hover/item:opacity-100 transition-all duration-300">
+                         <button 
+                           onClick={() => addToCart(product)}
+                           className="w-full bg-[#3C101B] text-white py-3 text-[10px] uppercase tracking-widest font-medium hover:bg-[#2A0B13] transition-colors"
+                         >
+                           Add to Cart
+                         </button>
+                       </div>
+                    </div>
                     <div className="flex justify-between items-start gap-4 px-1">
                       <h3 className="font-sans font-medium text-[#3C101B] text-sm md:text-sm leading-snug">{pData.name}</h3>
                       <p className="text-[#A28B55] text-xs md:text-sm whitespace-nowrap font-medium">{product.price}</p>
@@ -388,7 +496,7 @@ export default function App() {
              </div>
           </div>
           <div className="flex-1 w-full relative aspect-[4/3] md:aspect-[3/2]">
-             <img src="https://images.unsplash.com/photo-1605705663782-b7bce3e8d9b1?auto=format&fit=crop&q=80&w=1200" className="w-full h-full object-cover opacity-90 shadow-2xl" alt="Boutique" />
+             <img referrerPolicy="no-referrer" src="https://images.unsplash.com/photo-1605705663782-b7bce3e8d9b1?auto=format&fit=crop&q=80&w=1200" className="w-full h-full object-cover opacity-90 shadow-2xl" alt="Boutique" />
           </div>
         </div>
       </section>
@@ -438,6 +546,75 @@ export default function App() {
           setCategories={setCategories}
           onClose={() => setIsAdminOpen(false)} 
         />
+      )}
+
+      {/* Cart Sidebar */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />
+          <div className="relative w-full max-w-md bg-[#F7F4EF] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between p-6 border-b border-[#3C101B]/10">
+              <h2 className="font-serif text-2xl text-[#3C101B] italic">Your Cart</h2>
+              <button onClick={() => setIsCartOpen(false)} className="text-[#3C101B] hover:opacity-50">
+                <X size={24} strokeWidth={1.5} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              {cart.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                  <ShoppingBag size={48} strokeWidth={1} className="mb-4" />
+                  <p className="font-serif text-lg">Your cart is empty.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {cart.map((item, idx) => (
+                    <div key={idx} className="flex gap-4 items-center">
+                      <div className="w-20 aspect-[4/5] bg-[#EAE5DB] overflow-hidden flex-shrink-0">
+                        {item.product.image ? <img referrerPolicy="no-referrer" src={item.product.image} className="w-full h-full object-cover" /> : null}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-[12px] font-medium text-[#3C101B] mb-1 leading-snug">{item.product[lang].name}</h4>
+                        <p className="text-[#A28B55] text-[11px] font-medium mb-2">{item.product.price}</p>
+                        <div className="flex items-center gap-3">
+                           <button 
+                             onClick={() => setCart(cart.map(c => c.product.id === item.product.id ? { ...c, quantity: Math.max(1, c.quantity - 1) } : c))}
+                             className="w-6 h-6 border border-[#3C101B]/20 flex items-center justify-center text-[#3C101B]"
+                           >-</button>
+                           <span className="text-[11px]">{item.quantity}</span>
+                           <button 
+                             onClick={() => setCart(cart.map(c => c.product.id === item.product.id ? { ...c, quantity: c.quantity + 1 } : c))}
+                             className="w-6 h-6 border border-[#3C101B]/20 flex items-center justify-center text-[#3C101B]"
+                           >+</button>
+                           <button 
+                             onClick={() => setCart(cart.filter(c => c.product.id !== item.product.id))}
+                             className="ml-auto text-[10px] uppercase tracking-widest text-[#3C101B]/50 hover:text-[#3C101B] underline"
+                           >Remove</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {cart.length > 0 && (
+              <div className="p-6 border-t border-[#3C101B]/10 bg-[#EAE5DB]/50">
+                 <button 
+                   onClick={() => {
+                     const orderText = cart.map(item => `${item.quantity}x ${item.product[lang].name} (${item.product.price})`).join('\\n');
+                     const message = `Hello Shivgouri, I would like to order:\\n\\n${orderText}`;
+                     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+                     window.open(waLink, '_blank');
+                   }}
+                   className="w-full bg-[#3C101B] text-white py-4 text-[11px] uppercase tracking-widest font-bold hover:bg-[#2A0B13] transition-colors"
+                 >
+                   Checkout via WhatsApp
+                 </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

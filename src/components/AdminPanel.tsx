@@ -238,11 +238,11 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <Upload size={16} /> Upload Photo
                     </button>
                   </div>
-                  {editingCategory.image && (
+                  {editingCategory.image ? (
                     <div className="mt-4 w-32 h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 relative group">
-                      <img src={editingCategory.image} alt="Preview" className="w-full h-full object-cover" />
+                      <img referrerPolicy="no-referrer" src={editingCategory.image} alt="Preview" className="w-full h-full object-cover" />
                     </div>
-                  )}
+                  ) : null}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
                   {/* English Section */}
@@ -323,11 +323,11 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <Upload size={16} /> Upload Device Photo
                     </button>
                   </div>
-                  {editing.image && (
+                  {editing.image ? (
                     <div className="mt-4 w-32 h-40 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 relative group">
-                      <img src={editing.image} alt="Preview" className="w-full h-full object-cover" />
+                      <img referrerPolicy="no-referrer" src={editing.image} alt="Preview" className="w-full h-full object-cover" />
                     </div>
-                  )}
+                  ) : null}
                 </div>
                 
                 <div>
@@ -433,7 +433,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div className="flex items-center gap-5 w-full sm:w-auto mb-4 sm:mb-0">
                       <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                         {p.image ? (
-                          <img src={p.image} alt={p.en.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          <img referrerPolicy="no-referrer" src={p.image} alt={p.en.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={20}/></div>
                         )}
@@ -496,7 +496,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div className="flex items-center gap-5 w-full sm:w-auto mb-4 sm:mb-0">
                       <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                         {c.image ? (
-                          <img src={c.image} alt={c.en} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          <img referrerPolicy="no-referrer" src={c.image} alt={c.en} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={20}/></div>
                         )}
