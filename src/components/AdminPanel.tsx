@@ -1,24 +1,26 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { X, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, Layers, Box } from 'lucide-react';
-import { Product, Category } from '../types';
-import { saveProduct, deleteProduct, saveCategory, deleteCategory } from '../firebase';
+import { Product, Category, Offer } from '../types';
+import { saveProduct, deleteProduct, saveCategory, deleteCategory, saveOffer, deleteOffer } from '../firebase';
 
 interface Props {
   products: Product[];
   setProducts: (p: Product[]) => void;
   categories: Category[];
   setCategories: (c: Category[]) => void;
+  offers: Offer[];
+  setOffers: (o: Offer[]) => void;
   onClose: () => void;
 }
 
-export default function AdminPanel({ products, setProducts, categories, setCategories, onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
+export default function AdminPanel({ products, setProducts, categories, setCategories, offers, setOffers, onClose }: Props) {
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'offers'>('products');
   const [editing, setEditing] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const categoryFileInputRef = useRef<HTMLInputElement>(null);
+  const [deleteOfferConfirm, setDeleteOfferConfirm] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (!editing) return;
@@ -51,8 +53,10 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
       id: Date.now(),
       price: '₹',
       image: '',
-      en: { name: '', badge: '' },
-      kn: { name: '', badge: '' }
+      images: [],
+      colors: [],
+      en: { name: '', badge: '', description: '' },
+      kn: { name: '', badge: '', description: '' }
     });
   };
 
@@ -94,6 +98,51 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleAdditionalImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !editing) return;
+
+    Array.from(files).forEach((file: File) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_WIDTH = 600;
+          const MAX_HEIGHT = 800;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            setEditing(prev => {
+              if (!prev) return prev;
+              return { ...prev, images: [...(prev.images || []), dataUrl] };
+            });
+          }
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleCategoryImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,7 +215,55 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
     setEditingCategory({
       id: Date.now().toString(),
       en: '',
-      kn: ''
+      kn: '',
+      section: 'Womens'
+    });
+  };
+
+  const handleOfferImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingOffer) return;
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      setEditingOffer({ ...editingOffer, image: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveOffer = async () => {
+    if (!editingOffer) return;
+    try {
+      await saveOffer(editingOffer);
+      const exists = offers.find(o => o.id === editingOffer.id);
+      if (exists) {
+        setOffers(offers.map(o => o.id === editingOffer.id ? editingOffer : o));
+      } else {
+        setOffers([...offers, editingOffer]);
+      }
+    } catch (e) {
+      console.error("Error saving offer to Firestore:", e);
+    }
+    setEditingOffer(null);
+  };
+
+  const handleDeleteOffer = async (id: string) => {
+    try {
+      await deleteOffer(id);
+      setOffers(offers.filter(o => o.id !== id));
+    } catch (e) {
+      console.error("Error deleting offer from Firestore:", e);
+    }
+    setDeleteOfferConfirm(null);
+  };
+
+  const handleAddOffer = () => {
+    setEditingOffer({
+      id: Date.now().toString(),
+      isActive: true,
+      en: { title: '', description: '', buttonText: 'SHOP NOW' },
+      kn: { title: '', description: '', buttonText: 'ಈಗಲೇ ಖರೀದಿಸಿ' }
     });
   };
 
@@ -176,11 +273,11 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#f8f6f2]">
           <div className="flex items-center gap-6">
             <h2 className="font-serif text-2xl text-[#8B1C31] italic tracking-tight hidden sm:block">Store Management</h2>
-            {!editing && !editingCategory && (
-              <div className="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm border border-gray-100">
+            {!editing && !editingCategory && !editingOffer && (
+              <div className="flex overflow-x-auto gap-2 bg-white rounded-lg p-1 shadow-sm border border-gray-100 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] max-w-[calc(100vw-120px)] md:max-w-none">
                 <button
                   onClick={() => setActiveTab('products')}
-                  className={`px-4 py-1.5 text-xs font-medium tracking-widest uppercase rounded-md transition-colors flex items-center gap-2 ${
+                  className={`whitespace-nowrap flex-shrink-0 px-4 py-1.5 text-xs font-medium tracking-widest uppercase rounded-md transition-colors flex items-center gap-2 ${
                     activeTab === 'products' ? 'bg-[#8B1C31] text-white' : 'text-gray-500 hover:text-[#1a1a1a]'
                   }`}
                 >
@@ -188,11 +285,19 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                 </button>
                 <button
                   onClick={() => setActiveTab('categories')}
-                  className={`px-4 py-1.5 text-xs font-medium tracking-widest uppercase rounded-md transition-colors flex items-center gap-2 ${
+                  className={`whitespace-nowrap flex-shrink-0 px-4 py-1.5 text-xs font-medium tracking-widest uppercase rounded-md transition-colors flex items-center gap-2 ${
                     activeTab === 'categories' ? 'bg-[#8B1C31] text-white' : 'text-gray-500 hover:text-[#1a1a1a]'
                   }`}
                 >
                   <Layers size={14} /> Categories
+                </button>
+                <button
+                  onClick={() => setActiveTab('offers')}
+                  className={`whitespace-nowrap flex-shrink-0 px-4 py-1.5 text-xs font-medium tracking-widest uppercase rounded-md transition-colors flex items-center gap-2 ${
+                    activeTab === 'offers' ? 'bg-[#8B1C31] text-white' : 'text-gray-500 hover:text-[#1a1a1a]'
+                  }`}
+                >
+                  <ImageIcon size={14} /> Offers
                 </button>
               </div>
             )}
@@ -203,7 +308,139 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
         </div>
 
         <div className="p-6 overflow-y-auto flex-1 bg-white custom-scrollbar">
-          {editingCategory ? (
+          {editingOffer ? (
+            <div className="space-y-6 max-w-2xl mx-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-[#1a1a1a]">Edit Offer</h3>
+                <button onClick={() => setEditingOffer(null)} className="text-sm text-gray-500 hover:text-black transition-colors font-medium">Cancel</button>
+              </div>
+              
+              <div className="grid gap-5">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Offer Image (Optional)</label>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input 
+                      type="text" 
+                      value={editingOffer.image || ''}
+                      onChange={e => setEditingOffer({...editingOffer, image: e.target.value})}
+                      placeholder="Image URL" 
+                      className="flex-1 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
+                    />
+                    <div className="flex items-center">
+                      <span className="text-xs text-gray-400 uppercase tracking-widest mx-2 font-medium">OR</span>
+                    </div>
+                    <label className="bg-[#1a1a1a] text-white px-5 py-3 rounded-md text-[10px] font-medium tracking-widest uppercase hover:bg-black transition-colors flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer">
+                      <Upload size={16} /> Upload Photo
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleOfferImageUpload} 
+                      />
+                    </label>
+                  </div>
+                  {editingOffer.image && (
+                    <div className="mt-4 w-48 aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gray-50 relative group">
+                      <img referrerPolicy="no-referrer" src={editingOffer.image} alt="Preview" className="w-full h-full object-cover" />
+                      <button onClick={() => setEditingOffer({...editingOffer, image: ''})} className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full text-red-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <input 
+                    type="checkbox" 
+                    id="offerActive"
+                    checked={editingOffer.isActive} 
+                    onChange={e => setEditingOffer({...editingOffer, isActive: e.target.checked})} 
+                    className="w-4 h-4 text-[#8B1C31] rounded border-gray-300 focus:ring-[#8B1C31]"
+                  />
+                  <label htmlFor="offerActive" className="text-sm font-medium text-gray-700 cursor-pointer">
+                    Offer is Active (Show popup to users)
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* English Section */}
+                  <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#8B1C31]"></span> English
+                    </h4>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2 font-medium">Title</label>
+                      <input 
+                        type="text" 
+                        value={editingOffer.en.title} 
+                        onChange={e => setEditingOffer({...editingOffer, en: {...editingOffer.en, title: e.target.value}})} 
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2 font-medium">Description</label>
+                      <textarea 
+                        value={editingOffer.en.description} 
+                        onChange={e => setEditingOffer({...editingOffer, en: {...editingOffer.en, description: e.target.value}})} 
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] h-24" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2 font-medium">Button Text</label>
+                      <input 
+                        type="text" 
+                        value={editingOffer.en.buttonText} 
+                        onChange={e => setEditingOffer({...editingOffer, en: {...editingOffer.en, buttonText: e.target.value}})} 
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Kannada Section */}
+                  <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#8B1C31]"></span> ಕನ್ನಡ (Kannada)
+                    </h4>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2 font-medium">Title</label>
+                      <input 
+                        type="text" 
+                        value={editingOffer.kn.title} 
+                        onChange={e => setEditingOffer({...editingOffer, kn: {...editingOffer.kn, title: e.target.value}})} 
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2 font-medium">Description</label>
+                      <textarea 
+                        value={editingOffer.kn.description} 
+                        onChange={e => setEditingOffer({...editingOffer, kn: {...editingOffer.kn, description: e.target.value}})} 
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] h-24" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2 font-medium">Button Text</label>
+                      <input 
+                        type="text" 
+                        value={editingOffer.kn.buttonText} 
+                        onChange={e => setEditingOffer({...editingOffer, kn: {...editingOffer.kn, buttonText: e.target.value}})} 
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6">
+                <button 
+                  onClick={handleSaveOffer} 
+                  className="w-full bg-[#8B1C31] text-white py-4 rounded-md text-[11px] font-bold tracking-[0.2em] uppercase hover:bg-[#6a1525] transition-colors flex items-center justify-center gap-2"
+                >
+                  <Save size={16} /> Save Offer
+                </button>
+              </div>
+            </div>
+          ) : editingCategory ? (
             <div className="space-y-6 max-w-2xl mx-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-[#1a1a1a]">Edit Category</h3>
@@ -224,19 +461,15 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div className="flex items-center">
                       <span className="text-xs text-gray-400 uppercase tracking-widest mx-2 font-medium">OR</span>
                     </div>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      ref={categoryFileInputRef} 
-                      onChange={handleCategoryImageUpload} 
-                    />
-                    <button 
-                      onClick={() => categoryFileInputRef.current?.click()}
-                      className="bg-[#1a1a1a] text-white px-5 py-3 rounded-md text-[10px] font-medium tracking-widest uppercase hover:bg-black transition-colors flex items-center justify-center gap-2 flex-shrink-0"
-                    >
+                    <label className="bg-[#1a1a1a] text-white px-5 py-3 rounded-md text-[10px] font-medium tracking-widest uppercase hover:bg-black transition-colors flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer">
                       <Upload size={16} /> Upload Photo
-                    </button>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleCategoryImageUpload} 
+                      />
+                    </label>
                   </div>
                   {editingCategory.image ? (
                     <div className="mt-4 w-32 h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 relative group">
@@ -261,6 +494,23 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     </div>
                   </div>
 
+                  <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#8B1C31]"></span> Section
+                    </h4>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2 font-medium">Main Section</label>
+                      <select
+                        value={editingCategory.section || 'Womens'}
+                        onChange={e => setEditingCategory({...editingCategory, section: e.target.value})}
+                        className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
+                      >
+                        <option value="Womens">Women's</option>
+                        <option value="Kids">Kids</option>
+                      </select>
+                    </div>
+                  </div>
+
                   {/* Kannada Section */}
                   <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50">
                     <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
@@ -276,6 +526,58 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       />
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50 mt-6">
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#8B1C31]"></span> Subcategories
+                </h4>
+                <div className="space-y-3">
+                  {(editingCategory.subcategories || []).map((subcat, idx) => (
+                    <div key={subcat.id} className="flex gap-2 items-center">
+                      <input 
+                        type="text" 
+                        placeholder="English Name"
+                        value={subcat.en} 
+                        onChange={e => {
+                          const newSubcats = [...(editingCategory.subcategories || [])];
+                          newSubcats[idx] = { ...newSubcats[idx], en: e.target.value };
+                          setEditingCategory({...editingCategory, subcategories: newSubcats});
+                        }}
+                        className="flex-1 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Kannada Name"
+                        value={subcat.kn} 
+                        onChange={e => {
+                          const newSubcats = [...(editingCategory.subcategories || [])];
+                          newSubcats[idx] = { ...newSubcats[idx], kn: e.target.value };
+                          setEditingCategory({...editingCategory, subcategories: newSubcats});
+                        }}
+                        className="flex-1 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
+                      />
+                      <button 
+                        onClick={() => {
+                          const newSubcats = (editingCategory.subcategories || []).filter((_, i) => i !== idx);
+                          setEditingCategory({...editingCategory, subcategories: newSubcats});
+                        }}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-md"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  <button 
+                    onClick={() => {
+                      const newSubcats = [...(editingCategory.subcategories || []), { id: Date.now().toString(), en: '', kn: '' }];
+                      setEditingCategory({...editingCategory, subcategories: newSubcats});
+                    }}
+                    className="text-xs font-medium text-[#8B1C31] uppercase tracking-widest flex items-center gap-1 hover:underline mt-2"
+                  >
+                    <Plus size={14} /> Add Subcategory
+                  </button>
                 </div>
               </div>
 
@@ -309,19 +611,15 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div className="flex items-center">
                       <span className="text-xs text-gray-400 uppercase tracking-widest mx-2 font-medium">OR</span>
                     </div>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      ref={fileInputRef} 
-                      onChange={handleImageUpload} 
-                    />
-                    <button 
-                      onClick={() => fileInputRef.current?.click()}
-                      className="bg-[#1a1a1a] text-white px-5 py-3 rounded-md text-[10px] font-medium tracking-widest uppercase hover:bg-black transition-colors flex items-center justify-center gap-2 flex-shrink-0"
-                    >
+                    <label className="bg-[#1a1a1a] text-white px-5 py-3 rounded-md text-[10px] font-medium tracking-widest uppercase hover:bg-black transition-colors flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer">
                       <Upload size={16} /> Upload Device Photo
-                    </button>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleImageUpload} 
+                      />
+                    </label>
                   </div>
                   {editing.image ? (
                     <div className="mt-4 w-32 h-40 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 relative group">
@@ -330,6 +628,61 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                   ) : null}
                 </div>
                 
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Additional Images</label>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <textarea 
+                      value={(editing.images || []).join(', ')}
+                      onChange={e => setEditing({...editing, images: e.target.value.split(',').map(s => s.trim()).filter(s => s)})}
+                      className="flex-1 border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50 h-16"
+                      placeholder="https://..., https://..."
+                    />
+                    <div className="flex items-center">
+                      <span className="text-xs text-gray-400 uppercase tracking-widest mx-2 font-medium">OR</span>
+                    </div>
+                    <label className="bg-[#1a1a1a] text-white px-5 py-3 rounded-md text-[10px] font-medium tracking-widest uppercase hover:bg-black transition-colors flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer">
+                      <Upload size={16} /> Upload Photos
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        multiple
+                        className="hidden" 
+                        onChange={handleAdditionalImageUpload} 
+                      />
+                    </label>
+                  </div>
+                  {(editing.images || []).length > 0 && (
+                    <div className="flex gap-2 mt-2 overflow-x-auto">
+                      {(editing.images || []).map((img, i) => (
+                         <div key={i} className="w-16 h-20 flex-shrink-0 rounded-md overflow-hidden border border-gray-200 bg-gray-50 relative group">
+                           <button onClick={() => setEditing({...editing, images: editing.images!.filter((_, idx) => idx !== i)})} className="absolute top-1 right-1 z-10 bg-white rounded-full p-0.5 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <X size={12} />
+                           </button>
+                           <img referrerPolicy="no-referrer" src={img} className="w-full h-full object-cover" />
+                         </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Colors (Comma separated)</label>
+                  <input 
+                    type="text" 
+                    value={(editing.colors || []).join(', ')}
+                    onChange={e => setEditing({...editing, colors: e.target.value.split(',').map(s => s.trim()).filter(s => s)})}
+                    className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
+                    placeholder="Red, Blue, Green..."
+                  />
+                  {(editing.colors || []).length > 0 && (
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {(editing.colors || []).map((c, i) => (
+                         <span key={i} className="px-2 py-1 bg-gray-100 text-xs rounded-full border border-gray-200 text-gray-700">{c}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Price</label>
                   <input 
@@ -344,26 +697,69 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                 <div className="mt-4">
                   <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Category / Section</label>
                   {categories.length > 0 ? (
-                    <select
-                      value={editing.categoryId || categories.find(c => c.en === editing.en.badge)?.id || ''}
-                      onChange={e => {
-                        const cat = categories.find(c => c.id === e.target.value);
-                        if (cat) {
-                          setEditing({
-                            ...editing,
-                            categoryId: cat.id,
-                            en: { ...editing.en, badge: cat.en },
-                            kn: { ...editing.kn, badge: cat.kn }
-                          });
+                    <div className="space-y-3">
+                      <select
+                        value={editing.categoryId || categories.find(c => c.en === editing.en.badge)?.id || ''}
+                        onChange={e => {
+                          const cat = categories.find(c => c.id === e.target.value);
+                          if (cat) {
+                            setEditing({
+                              ...editing,
+                              categoryId: cat.id,
+                              subcategoryId: undefined, // Reset subcategory when category changes
+                              en: { ...editing.en, badge: cat.en, subcategory: undefined },
+                              kn: { ...editing.kn, badge: cat.kn, subcategory: undefined }
+                            });
+                          }
+                        }}
+                        className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
+                      >
+                        <option value="" disabled>Select a category</option>
+                        {categories.map(c => (
+                          <option key={c.id} value={c.id}>{c.en} / {c.kn}</option>
+                        ))}
+                      </select>
+                      
+                      {/* Subcategory Select (if applicable) */}
+                      {(() => {
+                        const activeCat = categories.find(c => c.id === (editing.categoryId || categories.find(cat => cat.en === editing.en.badge)?.id));
+                        if (activeCat && activeCat.subcategories && activeCat.subcategories.length > 0) {
+                          return (
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest mt-2">Subcategory (Optional)</label>
+                              <select
+                                value={editing.subcategoryId || ''}
+                                onChange={e => {
+                                  const subcat = activeCat.subcategories?.find(sc => sc.id === e.target.value);
+                                  if (subcat) {
+                                    setEditing({
+                                      ...editing,
+                                      subcategoryId: subcat.id,
+                                      en: { ...editing.en, subcategory: subcat.en },
+                                      kn: { ...editing.kn, subcategory: subcat.kn }
+                                    });
+                                  } else {
+                                    setEditing({
+                                      ...editing,
+                                      subcategoryId: undefined,
+                                      en: { ...editing.en, subcategory: undefined },
+                                      kn: { ...editing.kn, subcategory: undefined }
+                                    });
+                                  }
+                                }}
+                                className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
+                              >
+                                <option value="">No subcategory</option>
+                                {activeCat.subcategories.map(sc => (
+                                  <option key={sc.id} value={sc.id}>{sc.en} / {sc.kn}</option>
+                                ))}
+                              </select>
+                            </div>
+                          );
                         }
-                      }}
-                      className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
-                    >
-                      <option value="" disabled>Select a category</option>
-                      {categories.map(c => (
-                        <option key={c.id} value={c.id}>{c.en} / {c.kn}</option>
-                      ))}
-                    </select>
+                        return null;
+                      })()}
+                    </div>
                   ) : (
                     <p className="text-xs text-red-500 font-medium">Please add a category in the Categories tab first.</p>
                   )}
@@ -384,6 +780,14 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2 font-medium">Description</label>
+                      <textarea 
+                        value={editing.en.description || ''} 
+                        onChange={e => setEditing({...editing, en: {...editing.en, description: e.target.value}})} 
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] h-24" 
+                      />
+                    </div>
                   </div>
 
                   {/* Kannada Section */}
@@ -398,6 +802,14 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                         value={editing.kn.name} 
                         onChange={e => setEditing({...editing, kn: {...editing.kn, name: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2 font-medium">Description</label>
+                      <textarea 
+                        value={editing.kn.description || ''} 
+                        onChange={e => setEditing({...editing, kn: {...editing.kn, description: e.target.value}})} 
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] h-24" 
                       />
                     </div>
                   </div>
@@ -440,7 +852,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       </div>
                       <div>
                         <h4 className="font-medium text-[#1a1a1a] font-serif text-lg leading-tight mb-1">{p.en.name}</h4>
-                        <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">{p.price} <span className="mx-2 text-gray-300">|</span> {p.en.badge}</p>
+                        <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">{p.price} <span className="mx-2 text-gray-300">|</span> {p.en.badge} {p.en.subcategory ? ` / ${p.en.subcategory}` : ''}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -476,7 +888,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                 )}
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'categories' ? (
             <div>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <p className="text-sm text-gray-500 max-w-md leading-relaxed">
@@ -539,7 +951,86 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                 )}
               </div>
             </div>
-          )}
+          ) : activeTab === 'offers' ? (
+            <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <p className="text-sm text-gray-500 max-w-md leading-relaxed">
+                  Manage special offers and popups shown to users.
+                </p>
+                <button 
+                  onClick={handleAddOffer} 
+                  className="bg-[#1a1a1a] text-white px-5 py-3 rounded-md text-[10px] font-medium tracking-widest uppercase hover:bg-black transition-colors flex items-center gap-2 flex-shrink-0"
+                >
+                  <Plus size={16} /> Add Offer
+                </button>
+              </div>
+              
+              <div className="grid gap-3">
+                {offers.map(o => (
+                  <div key={o.id} className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-xl transition-all bg-white group ${o.isActive ? 'border-green-200 shadow-sm' : 'border-gray-100 hover:border-gray-300 hover:shadow-sm'}`}>
+                    <div className="flex items-center gap-5 w-full sm:w-auto mb-4 sm:mb-0">
+                      <div className="w-24 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        {o.image ? (
+                          <img referrerPolicy="no-referrer" src={o.image} alt={o.en.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={20}/></div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-[#1a1a1a] text-sm leading-tight">{o.en.title}</h4>
+                          {o.isActive && (
+                            <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold tracking-widest uppercase">Active</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-400 font-serif">{o.kn.title}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-end border-t sm:border-t-0 border-gray-100 pt-3 sm:pt-0">
+                      {deleteOfferConfirm === o.id ? (
+                        <div className="flex items-center gap-2 mr-2">
+                          <span className="text-xs text-red-500 font-medium mr-2">Delete this offer?</span>
+                          <button onClick={() => handleDeleteOffer(o.id)} className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors">
+                            Yes
+                          </button>
+                          <button onClick={() => setDeleteOfferConfirm(null)} className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={async () => {
+                              const updated = { ...o, isActive: !o.isActive };
+                              await saveOffer(updated);
+                              setOffers(offers.map(off => off.id === o.id ? updated : off));
+                            }} 
+                            className={`px-3 py-1.5 text-[10px] font-bold tracking-widest uppercase rounded-md transition-colors ${o.isActive ? 'text-gray-500 bg-gray-100 hover:bg-gray-200' : 'text-green-700 bg-green-100 hover:bg-green-200'}`}
+                          >
+                            {o.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button onClick={() => setEditingOffer(o)} className="p-2.5 text-gray-400 hover:text-[#8B1C31] hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100">
+                            <Edit2 size={16} />
+                          </button>
+                          <button onClick={() => setDeleteOfferConfirm(o.id)} className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100">
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {offers.length === 0 && (
+                  <div className="text-center py-16 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+                    <div className="flex justify-center mb-4"><ImageIcon size={48} className="opacity-20"/></div>
+                    <p className="text-sm font-medium">No offers found</p>
+                    <p className="text-xs mt-1">Create a special offer popup for your customers.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

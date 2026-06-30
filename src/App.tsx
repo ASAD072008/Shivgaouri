@@ -9,10 +9,10 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Search, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X } from 'lucide-react';
-import { Product } from './types';
+import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share } from 'lucide-react';
+import { Product, Offer } from './types';
 import AdminPanel from './components/AdminPanel';
-import { fetchProducts, fetchCategories } from './firebase';
+import { fetchProducts, fetchCategories, fetchOffers } from './firebase';
 
 const content = {
   en: {
@@ -36,63 +36,46 @@ type CartItem = { product: Product; quantity: number };
 export default function App() {
   const [lang, setLang] = useState<'en' | 'kn'>('en');
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('Womens');
   const [activeCategory, setActiveCategory] = useState<string>('All');
-  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
+  const [activeSubcategory, setActiveSubcategory] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   const [products, setProducts] = useState<Product[]>([]);
 
   const [categories, setCategories] = useState<import('./types').Category[]>([]);
-
-  const dragStartX = useRef<number | null>(null);
-  const dragOffset = useRef<number>(0);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [swipeOffset, setSwipeOffset] = useState(0);
-
-  const handleDragStart = (clientX: number) => {
-    dragStartX.current = clientX;
-    dragOffset.current = 0;
-    setIsSwiping(true);
-  };
-
-  const handleDragMove = (clientX: number) => {
-    if (dragStartX.current === null) return;
-    const diff = clientX - dragStartX.current;
-    dragOffset.current = diff;
-    setSwipeOffset(diff);
-  };
-
-  const handleDragEnd = () => {
-    if (dragStartX.current === null) return;
-    const threshold = 50; // min swipe distance in px
-    if (dragOffset.current < -threshold) {
-      // Swiped left -> next
-      setCurrentCategoryIndex(prev => Math.min(categories.length - 1, prev + 1));
-    } else if (dragOffset.current > threshold) {
-      // Swiped right -> prev
-      setCurrentCategoryIndex(prev => Math.max(0, prev - 1));
-    }
-    dragStartX.current = null;
-    dragOffset.current = 0;
-    setIsSwiping(false);
-    setSwipeOffset(0);
-  };
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [showOffer, setShowOffer] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
         const fetchedCats = await fetchCategories();
         const fetchedProds = await fetchProducts();
+        const fetchedOffers = await fetchOffers();
         
         let finalCats = fetchedCats;
         let finalProds = fetchedProds;
 
         setCategories(finalCats);
         setProducts(finalProds);
+        setOffers(fetchedOffers);
+        
+        if (fetchedOffers.some(o => o.isActive)) {
+          setTimeout(() => setShowOffer(true), 2000);
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const sharedProductId = params.get('product');
+        if (sharedProductId) {
+          const sharedProduct = finalProds.find(p => String(p.id) === sharedProductId);
+          if (sharedProduct) {
+            setSelectedProduct(sharedProduct);
+          }
+        }
       } catch (err) {
         console.error("Error loading data from Firestore:", err);
       } finally {
@@ -123,11 +106,32 @@ export default function App() {
     
   const filterCategories = ['All', ...englishBadges];
   
+  const heroCategories = categories.length > 0 
+    ? categories 
+    : Array.from(new Set(products.map(p => p.en.badge).filter(Boolean))).map((badge, idx) => {
+        const prod = products.find(p => p.en.badge === badge);
+        return {
+          id: `fallback-${idx}`,
+          en: badge,
+          kn: prod?.kn.badge || badge,
+          image: prod?.image || prod?.images?.[0] || '',
+          section: 'Womens'
+        };
+      });
+
+  const filteredCategories = categories.length > 0 
+    ? categories.filter(c => (c.section || 'Womens') === activeSection)
+    : heroCategories.filter(c => c.section === activeSection);
+  
   const filteredProducts = products.filter(p => {
+    const pCat = categories.find(c => c.en === p.en.badge);
+    const pSection = pCat?.section || 'Womens';
+    
+    const matchesSection = pSection === activeSection;
     const matchesCategory = activeCategory === 'All' || p.en.badge === activeCategory;
-    const matchesSearch = p.en.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          p.kn.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    const matchesSubcategory = activeSubcategory === 'All' || p.en.subcategory === activeSubcategory;
+                          
+    return matchesSection && matchesCategory && matchesSubcategory;
   });
 
   if (isLoading) {
@@ -154,59 +158,16 @@ export default function App() {
               <button className="md:hidden text-white hover:opacity-50 transition-opacity">
                 <Menu size={24} strokeWidth={1.5} />
               </button>
-              {!isSearchOpen && (
-                <button onClick={() => setIsSearchOpen(true)} className="md:hidden text-white hover:opacity-50 transition-opacity">
-                  <Search size={20} strokeWidth={1.5} />
-                </button>
-              )}
-              {isSearchOpen ? (
-                <div className="hidden md:flex items-center gap-2 bg-white/10 rounded-full px-3 py-1.5 w-48 lg:w-64">
-                  <Search size={16} strokeWidth={1.5} className="text-white/50" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search..."
-                    className="bg-transparent border-none outline-none text-white text-[11px] uppercase tracking-widest placeholder:text-white/50 w-full"
-                    autoFocus
-                  />
-                  <button onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }} className="text-white/50 hover:text-white">
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
-                <button onClick={() => setIsSearchOpen(true)} className="hidden md:flex items-center justify-center text-white hover:opacity-50 transition-opacity">
-                  <Search size={20} strokeWidth={1.5} />
-                </button>
-              )}
             </div>
             
             {/* Logo */}
-            <div className={`flex-1 flex justify-center w-1/3 transition-opacity ${isSearchOpen ? 'opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto' : 'opacity-100'}`}>
+            <div className="flex-1 flex justify-center w-1/3 transition-opacity opacity-100">
               <a href="#" className="flex items-center gap-2 group">
                 <span className="font-logo text-2xl tracking-[0.1em] font-medium text-white uppercase">
                   Shivgouri
                 </span>
               </a>
             </div>
-
-            {/* Mobile Search Overlay */}
-            {isSearchOpen && (
-              <div className="absolute inset-0 bg-[#3C101B] flex md:hidden items-center px-4 z-10">
-                <Search size={18} strokeWidth={1.5} className="text-white/50 mr-3" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search..."
-                  className="bg-transparent border-none outline-none text-white text-[11px] uppercase tracking-widest placeholder:text-white/50 w-full"
-                  autoFocus
-                />
-                <button onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }} className="text-white ml-3">
-                  <X size={20} />
-                </button>
-              </div>
-            )}
 
             {/* Right Icons */}
             <div className="flex items-center justify-end gap-6 text-[11px] uppercase tracking-widest w-1/3">
@@ -270,6 +231,22 @@ export default function App() {
         </div>
       </section>
 
+      {/* Offer Announcement Bar */}
+      {offers.filter(o => o.isActive).length > 0 && (
+        <div className="bg-[#8B1C31] text-white overflow-hidden py-3 border-y border-[#3C101B]/20 shadow-inner">
+          <div className="whitespace-nowrap animate-marquee flex items-center gap-8 w-max">
+            {[...offers.filter(o => o.isActive), ...offers.filter(o => o.isActive), ...offers.filter(o => o.isActive), ...offers.filter(o => o.isActive)].map((offer, idx) => (
+              <span key={idx} className="text-[11px] font-bold tracking-widest uppercase flex items-center gap-8">
+                 <span>{offer[lang].title}</span>
+                 <span className="opacity-50 text-[#A28B55]">✦</span>
+                 <span>{offer[lang].description}</span>
+                 <span className="opacity-50 text-[#A28B55]">✦</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Curation Section */}
       <section className="py-24 px-6 max-w-7xl mx-auto text-center md:text-left">
          <div className="max-w-3xl mx-auto md:mx-0 border-l-2 border-[#A28B55] pl-6 mb-16">
@@ -284,74 +261,57 @@ export default function App() {
            </p>
          </div>
 
-         {/* Category Feature Slider (1 at a time) */}
-         <div className="relative group/catslider mt-12 mb-16 mx-auto max-w-4xl">
-           <div className="overflow-hidden rounded-sm relative bg-[#3C101B]">
-             <div 
-               className={`flex cursor-grab active:cursor-grabbing ${isSwiping ? '' : 'transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]'}`}
-               style={{ transform: `translateX(calc(-${currentCategoryIndex * 100}% + ${swipeOffset}px))` }}
-               onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
-               onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
-               onTouchEnd={handleDragEnd}
-               onMouseDown={(e) => handleDragStart(e.clientX)}
-               onMouseMove={(e) => {
-                 if (dragStartX.current !== null) {
-                   handleDragMove(e.clientX);
-                 }
-               }}
-               onMouseUp={handleDragEnd}
-               onMouseLeave={handleDragEnd}
-             >
-               {categories.map((cat) => (
-                 <div key={cat.id} className="min-w-full flex-shrink-0 relative aspect-[16/9] md:aspect-[21/9]">
-                   <div 
-                     onClick={() => {
-                       setActiveCategory(cat.en);
-                       document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
-                     }}
-                     className="w-full h-full cursor-pointer group"
-                   >
-                     {cat.image ? (
-                       <img referrerPolicy="no-referrer" src={cat.image} alt={cat.en} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-1000" />
-                     ) : (
-                       <div className="w-full h-full flex items-center justify-center text-white/20">
-                         <ImageIcon size={64} strokeWidth={1} />
-                       </div>
-                     )}
-                     <div className="absolute inset-0 bg-gradient-to-t from-[#3C101B]/90 via-transparent to-transparent pointer-events-none" />
-                     <div className="absolute bottom-8 left-8 right-8 flex flex-col md:flex-row items-start md:items-end justify-between">
-                       <div>
-                         <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-3 block font-medium">Curated Collection</span>
-                         <h3 className="font-serif text-3xl md:text-5xl text-white mb-2">{lang === 'en' ? cat.en : cat.kn}</h3>
-                       </div>
-                       <button className="hidden md:flex items-center gap-2 text-[11px] uppercase tracking-widest text-white/80 hover:text-white transition-colors pb-2">
-                         Explore Collection <ArrowRight size={16} />
-                       </button>
+         {/* Category Feature Slider (Native Scroll) */}
+         <div className="relative group/catslider mt-12 mb-16 mx-auto w-full max-w-[100vw] overflow-hidden">
+           <div 
+             id="category-slider"
+             className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-8 px-6 md:px-12"
+             style={{ scrollBehavior: 'smooth' }}
+           >
+             {heroCategories.map((cat) => (
+               <div key={cat.id} className="w-[85%] md:w-[40%] flex-shrink-0 snap-center relative aspect-[4/3] md:aspect-[16/9] rounded-xl overflow-hidden shadow-lg">
+                 <div 
+                   onClick={() => {
+                     if (cat.section) setActiveSection(cat.section);
+                     setActiveCategory(cat.en);
+                     document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' });
+                   }}
+                   className="w-full h-full cursor-pointer group"
+                 >
+                   {cat.image ? (
+                     <img draggable="false" referrerPolicy="no-referrer" src={cat.image} alt={cat.en} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000" />
+                   ) : (
+                     <div className="w-full h-full flex items-center justify-center bg-[#3C101B] text-white/20">
+                       <ImageIcon size={64} strokeWidth={1} />
                      </div>
+                   )}
+                   <div className="absolute inset-0 bg-gradient-to-t from-[#3C101B]/90 via-[#3C101B]/20 to-transparent pointer-events-none" />
+                   <div className="absolute bottom-6 left-6 right-6 flex flex-col items-start justify-end">
+                     <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-2 block font-medium shadow-black drop-shadow-md">Curated</span>
+                     <h3 className="font-serif text-2xl md:text-3xl text-white mb-2 drop-shadow-lg">{lang === 'en' ? cat.en : cat.kn}</h3>
                    </div>
                  </div>
-               ))}
-             </div>
+               </div>
+             ))}
            </div>
            
-           {/* Slider Navigation Dots */}
-           {categories.length > 1 && (
-             <div className="flex justify-between items-center mt-6">
-               <div className="text-[11px] font-medium text-[#3C101B]/50 font-serif">
-                 {String(currentCategoryIndex + 1).padStart(2, '0')} / {String(categories.length).padStart(2, '0')}
-               </div>
-               <div className="flex gap-1.5">
-                 {categories.map((_, idx) => (
-                   <button
-                     key={idx}
-                     onClick={() => setCurrentCategoryIndex(idx)}
-                     className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentCategoryIndex ? 'w-6 bg-[#3C101B]' : 'w-1.5 bg-[#3C101B]/20'}`}
-                     aria-label={`Go to slide ${idx + 1}`}
-                   />
-                 ))}
-               </div>
-             </div>
-           )}
+           {/* Navigation Buttons */}
+           <div className="absolute top-1/2 -translate-y-1/2 left-2 md:left-4 z-10 hidden md:block">
+             <button 
+               onClick={() => document.getElementById('category-slider')?.scrollBy({ left: -400, behavior: 'smooth' })}
+               className="w-10 h-10 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#3C101B] hover:bg-white transition-colors"
+             >
+               <ChevronLeft size={20} />
+             </button>
+           </div>
+           <div className="absolute top-1/2 -translate-y-1/2 right-2 md:right-4 z-10 hidden md:block">
+             <button 
+               onClick={() => document.getElementById('category-slider')?.scrollBy({ left: 400, behavior: 'smooth' })}
+               className="w-10 h-10 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#3C101B] hover:bg-white transition-colors"
+             >
+               <ChevronRight size={20} />
+             </button>
+           </div>
          </div>
       </section>
 
@@ -366,19 +326,35 @@ export default function App() {
              Lustrous silks, intricate zari — every piece chosen at the source and held to one standard. Finest. Reserved and preserved.
           </p>
 
-          {/* Category Tabs */}
-          <div className="flex overflow-x-auto gap-8 border-b border-[#3C101B]/10 pb-4 mb-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {/* Section Tabs */}
+          <div className="flex gap-8 border-b border-[#3C101B]/10 pb-4 mb-4">
              <button 
-               onClick={() => setActiveCategory('All')}
+               onClick={() => { setActiveSection('Womens'); setActiveCategory('All'); }}
+               className={`whitespace-nowrap transition-colors text-lg font-serif ${activeSection === 'Womens' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
+             >
+               Women's
+             </button>
+             <button 
+               onClick={() => { setActiveSection('Kids'); setActiveCategory('All'); }}
+               className={`whitespace-nowrap transition-colors text-lg font-serif ${activeSection === 'Kids' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
+             >
+               Kids
+             </button>
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex overflow-x-auto gap-8 border-b border-[#3C101B]/10 pb-4 mb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+             <button 
+               onClick={() => { setActiveCategory('All'); setActiveSubcategory('All'); }}
                className={`whitespace-nowrap flex items-baseline gap-2 transition-colors ${activeCategory === 'All' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
              >
                <span className="text-[10px] tracking-widest">00</span>
                <span className="font-serif text-lg">{t.collection.filterAll}</span>
              </button>
-             {categories.map((cat, idx) => (
+             {filteredCategories.map((cat, idx) => (
                <button 
                  key={cat.id}
-                 onClick={() => setActiveCategory(cat.en)}
+                 onClick={() => { setActiveCategory(cat.en); setActiveSubcategory('All'); }}
                  className={`whitespace-nowrap flex items-baseline gap-2 transition-colors ${activeCategory === cat.en ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
                >
                  <span className="text-[10px] tracking-widest">{String(idx + 1).padStart(2, '0')}</span>
@@ -386,6 +362,33 @@ export default function App() {
                </button>
              ))}
           </div>
+
+          {/* Subcategory Tabs */}
+          {(() => {
+            if (activeCategory === 'All') return null;
+            const currentCat = filteredCategories.find(c => c.en === activeCategory);
+            if (!currentCat || !currentCat.subcategories || currentCat.subcategories.length === 0) return null;
+            
+            return (
+              <div className="flex overflow-x-auto gap-6 pb-4 mb-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <button 
+                  onClick={() => setActiveSubcategory('All')}
+                  className={`whitespace-nowrap flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-medium transition-colors ${activeSubcategory === 'All' ? 'bg-[#3C101B] text-white border-[#3C101B]' : 'bg-transparent text-[#3C101B]/60 border-[#3C101B]/20 hover:border-[#3C101B]/40'}`}
+                >
+                  All {lang === 'en' ? currentCat.en : currentCat.kn}
+                </button>
+                {currentCat.subcategories.map(subcat => (
+                  <button 
+                    key={subcat.id}
+                    onClick={() => setActiveSubcategory(subcat.en)}
+                    className={`whitespace-nowrap flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-medium transition-colors ${activeSubcategory === subcat.en ? 'bg-[#3C101B] text-white border-[#3C101B]' : 'bg-transparent text-[#3C101B]/60 border-[#3C101B]/20 hover:border-[#3C101B]/40'}`}
+                  >
+                    {lang === 'en' ? subcat.en : subcat.kn}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
 
           <div className="flex justify-end mb-6">
             <button 
@@ -405,7 +408,7 @@ export default function App() {
                 const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
                 return (
                   <div key={product.id} className="min-w-[280px] md:min-w-[320px] snap-start flex flex-col group/item">
-                    <div className="relative aspect-[4/5] bg-[#EAE5DB] mb-4 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="relative aspect-[4/5] bg-[#EAE5DB] mb-4 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedProduct(product)}>
                        {product.image ? (
                          <img referrerPolicy="no-referrer" src={product.image} alt={pData.name} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-700" />
                        ) : (
@@ -423,8 +426,17 @@ export default function App() {
                          </button>
                        </div>
                     </div>
-                    <div className="flex justify-between items-start gap-4 px-1">
-                      <h3 className="font-sans font-medium text-[#3C101B] text-sm md:text-sm leading-snug">{pData.name}</h3>
+                    <div className="flex justify-between items-start gap-4 px-1 cursor-pointer" onClick={() => setSelectedProduct(product)}>
+                      <div className="flex flex-col gap-1">
+                        <h3 className="font-sans font-medium text-[#3C101B] text-sm md:text-sm leading-snug">{pData.name}</h3>
+                        {product.colors && product.colors.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {product.colors.map((c, i) => (
+                              <span key={i} className="text-[9px] px-1.5 py-0.5 bg-[#EAE5DB] text-[#3C101B]/80 rounded-sm">{c}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <p className="text-[#A28B55] text-xs md:text-sm whitespace-nowrap font-medium">{product.price}</p>
                     </div>
                   </div>
@@ -517,8 +529,102 @@ export default function App() {
           setProducts={setProducts} 
           categories={categories}
           setCategories={setCategories}
+          offers={offers}
+          setOffers={setOffers}
           onClose={() => setIsAdminOpen(false)} 
         />
+      )}
+
+      {/* Product Details Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#3C101B]/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)}></div>
+          <div className="relative bg-[#FAFAFA] w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row">
+            <button 
+              onClick={() => {
+                const url = `${window.location.origin}?product=${selectedProduct.id}`;
+                if (navigator.share) {
+                  navigator.share({
+                    title: selectedProduct[lang].name,
+                    text: `Check out ${selectedProduct[lang].name} at Shivgouri`,
+                    url: url
+                  }).catch(console.error);
+                } else {
+                  navigator.clipboard.writeText(url);
+                  alert('Link copied to clipboard!');
+                }
+              }}
+              className="absolute right-14 top-4 z-10 w-8 h-8 flex items-center justify-center bg-white/80 md:bg-black/5 rounded-full text-[#3C101B]"
+              title="Share or copy link"
+            >
+              <Share size={16} />
+            </button>
+            <button 
+              onClick={() => setSelectedProduct(null)}
+              className="absolute right-4 top-4 z-10 w-8 h-8 flex items-center justify-center bg-white/80 md:bg-black/5 rounded-full text-[#3C101B]"
+            >
+              <X size={18} />
+            </button>
+            <div className="w-full md:w-1/2 bg-[#EAE5DB]">
+              <div className="relative aspect-[4/5] w-full">
+                {selectedProduct.image ? (
+                  <img referrerPolicy="no-referrer" src={selectedProduct.image} alt={selectedProduct[lang].name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[#3C101B]/20">
+                    <ImageIcon size={64} strokeWidth={1} />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
+              <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-2 block">{selectedProduct[lang].badge}</span>
+              <h2 className="font-serif text-2xl md:text-3xl text-[#3C101B] mb-2 leading-tight">{selectedProduct[lang].name}</h2>
+              <p className="text-xl font-medium text-[#A28B55] mb-6">{selectedProduct.price}</p>
+              
+              {selectedProduct.images && selectedProduct.images.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-3">More Views</h4>
+                  <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+                    {selectedProduct.images.map((img, i) => (
+                      <div key={i} className="w-20 aspect-[4/5] flex-shrink-0 bg-[#EAE5DB] snap-start cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setSelectedProduct({...selectedProduct, image: img, images: [selectedProduct.image, ...selectedProduct.images!.filter((_, idx) => idx !== i)]})}>
+                        <img referrerPolicy="no-referrer" src={img} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {selectedProduct[lang].description && (
+                <div className="mb-6">
+                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                    {selectedProduct[lang].description}
+                  </p>
+                </div>
+              )}
+
+              {selectedProduct.colors && selectedProduct.colors.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-3">Available Colors</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProduct.colors.map((c, i) => (
+                      <span key={i} className="px-3 py-1.5 bg-[#EAE5DB] text-[11px] text-[#3C101B]/80 uppercase tracking-widest">{c}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button 
+                onClick={() => {
+                  addToCart(selectedProduct);
+                  setSelectedProduct(null);
+                }}
+                className="w-full bg-[#3C101B] text-white py-4 text-[11px] uppercase tracking-widest font-bold hover:bg-[#2A0B13] transition-colors mt-auto"
+              >
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Cart Sidebar */}
@@ -586,6 +692,38 @@ export default function App() {
                  </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Offer Popup */}
+      {showOffer && offers.filter(o => o.isActive).length > 0 && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowOffer(false)}></div>
+          <div className="relative bg-[#FAFAFA] w-full max-w-lg rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <button 
+              onClick={() => setShowOffer(false)}
+              className="absolute right-4 top-4 z-10 w-8 h-8 flex items-center justify-center bg-white/80 rounded-full text-[#3C101B] hover:bg-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+            {offers.find(o => o.isActive)?.image && (
+              <div className="w-full aspect-video bg-[#EAE5DB]">
+                <img referrerPolicy="no-referrer" src={offers.find(o => o.isActive)?.image} alt="Offer" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="p-8 text-center">
+              <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-2 block font-bold">Special Offer</span>
+              <h2 className="font-serif text-2xl md:text-3xl text-[#3C101B] mb-3 leading-tight">{offers.find(o => o.isActive)?.[lang].title}</h2>
+              <p className="text-gray-600 mb-6 text-sm">{offers.find(o => o.isActive)?.[lang].description}</p>
+              {offers.find(o => o.isActive)?.[lang].buttonText && (
+                <button 
+                  onClick={() => setShowOffer(false)}
+                  className="bg-[#3C101B] text-white px-8 py-3 text-[11px] font-bold tracking-[0.2em] uppercase hover:bg-black transition-colors"
+                >
+                  {offers.find(o => o.isActive)?.[lang].buttonText}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

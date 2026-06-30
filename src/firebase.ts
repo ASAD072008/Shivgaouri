@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore, collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { Product, Category } from './types';
+import { Product, Category, Offer } from './types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDUco6pzduuuNw7ClLxYNtnSAC8rhZBtpE",
@@ -129,6 +129,41 @@ export async function deleteCategory(id: string): Promise<void> {
   const path = `categories/${id}`;
   try {
     const docRef = doc(db, 'categories', id);
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function fetchOffers(): Promise<Offer[]> {
+  const path = 'offers';
+  try {
+    const querySnapshot = await getDocs(collection(db, path));
+    const list: Offer[] = [];
+    querySnapshot.forEach((doc) => {
+      list.push(doc.data() as Offer);
+    });
+    return list;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+    return [];
+  }
+}
+
+export async function saveOffer(offer: Offer): Promise<void> {
+  const path = `offers/${offer.id}`;
+  try {
+    const docRef = doc(db, 'offers', offer.id);
+    await setDoc(docRef, offer);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteOffer(id: string): Promise<void> {
+  const path = `offers/${id}`;
+  try {
+    const docRef = doc(db, 'offers', id);
     await deleteDoc(docRef);
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
