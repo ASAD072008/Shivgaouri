@@ -683,15 +683,68 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Price</label>
-                  <input 
-                    type="text" 
-                    value={editing.price}
-                    onChange={e => setEditing({...editing, price: e.target.value})}
-                    className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
-                    placeholder="₹..."
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Price</label>
+                    <input 
+                      type="text" 
+                      value={editing.price}
+                      onChange={e => setEditing({...editing, price: e.target.value})}
+                      className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
+                      placeholder="₹..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Stock</label>
+                    <input 
+                      type="number" 
+                      value={editing.stock ?? ''}
+                      onChange={e => setEditing({...editing, stock: e.target.value ? parseInt(e.target.value) : undefined})}
+                      className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
+                      placeholder="e.g. 10"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      id="productInOffer"
+                      checked={editing.inOffer || false} 
+                      onChange={e => setEditing({...editing, inOffer: e.target.checked})} 
+                      className="w-4 h-4 text-[#8B1C31] rounded border-gray-300 focus:ring-[#8B1C31]"
+                    />
+                    <label htmlFor="productInOffer" className="text-sm font-medium text-gray-700 cursor-pointer">
+                      Product is in Offer
+                    </label>
+                  </div>
+                  
+                  {editing.inOffer && (
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Discount Rate</label>
+                        <input 
+                          type="text" 
+                          value={editing.discountRate || ''}
+                          onChange={e => setEditing({...editing, discountRate: e.target.value})}
+                          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-white"
+                          placeholder="e.g. 20% OFF"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Offer Price</label>
+                        <input 
+                          type="text" 
+                          value={editing.offerPrice || ''}
+                          onChange={e => setEditing({...editing, offerPrice: e.target.value})}
+                          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-white"
+                          placeholder="e.g. ₹999"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4">

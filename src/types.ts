@@ -25,4 +25,8 @@ export type Product = {
   kn: { name: string; badge: string; description?: string; subcategory?: string; };
   categoryId?: string; // Optional reference
   subcategoryId?: string;
+  inOffer?: boolean;
+  discountRate?: string;
+  offerPrice?: string;
+  stock?: number;
 };

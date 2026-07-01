@@ -31,7 +31,7 @@ const content = {
   }
 };
 
-type CartItem = { product: Product; quantity: number };
+type CartItem = { product: Product; quantity: number; selectedColor?: string };
 
 export default function App() {
   const [lang, setLang] = useState<'en' | 'kn'>('en');
@@ -49,6 +49,7 @@ export default function App() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [showOffer, setShowOffer] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string>('');
 
   useEffect(() => {
     async function loadData() {
@@ -88,13 +89,21 @@ export default function App() {
   const waNumber = '918329732432';
   const t = content[lang];
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, selectedColor?: string) => {
+    if (product.stock !== undefined && product.stock <= 0) {
+      alert('Out of stock');
+      return;
+    }
     setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
+      const existing = prev.find(item => item.product.id === product.id && item.selectedColor === selectedColor);
       if (existing) {
-        return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+        if (product.stock !== undefined && existing.quantity >= product.stock) {
+          alert('Maximum stock reached');
+          return prev;
+        }
+        return prev.map(item => item.product.id === product.id && item.selectedColor === selectedColor ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { product, quantity: 1 }];
+      return [...prev, { product, quantity: 1, selectedColor }];
     });
     setIsCartOpen(true);
   };
@@ -416,14 +425,28 @@ export default function App() {
                            <ImageIcon size={48} strokeWidth={1} />
                          </div>
                        )}
+                       {product.inOffer && (
+                         <div className="absolute top-3 left-3 bg-[#8B1C31] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-1 shadow-sm">
+                           {product.discountRate || 'Offer'}
+                         </div>
+                       )}
                        {/* Add to Cart Overlay */}
                        <div className="absolute bottom-4 left-4 right-4 translate-y-8 opacity-0 group-hover/item:translate-y-0 group-hover/item:opacity-100 transition-all duration-300">
-                         <button 
-                           onClick={() => addToCart(product)}
-                           className="w-full bg-[#3C101B] text-white py-3 text-[10px] uppercase tracking-widest font-medium hover:bg-[#2A0B13] transition-colors"
-                         >
-                           Add to Cart
-                         </button>
+                         {product.stock !== undefined && product.stock <= 0 ? (
+                           <button 
+                             disabled
+                             className="w-full bg-gray-200 text-gray-500 py-3 text-[10px] uppercase tracking-widest font-medium cursor-not-allowed"
+                           >
+                             Out of Stock
+                           </button>
+                         ) : (
+                           <button 
+                             onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                             className="w-full bg-[#3C101B] text-white py-3 text-[10px] uppercase tracking-widest font-medium hover:bg-[#2A0B13] transition-colors"
+                           >
+                             Add to Cart
+                           </button>
+                         )}
                        </div>
                     </div>
                     <div className="flex justify-between items-start gap-4 px-1 cursor-pointer" onClick={() => setSelectedProduct(product)}>
@@ -437,7 +460,21 @@ export default function App() {
                           </div>
                         )}
                       </div>
-                      <p className="text-[#A28B55] text-xs md:text-sm whitespace-nowrap font-medium">{product.price}</p>
+                      <div className="flex flex-col items-end">
+                        {product.inOffer && product.offerPrice ? (
+                          <>
+                            <p className="text-[#8B1C31] text-xs md:text-sm whitespace-nowrap font-bold">{product.offerPrice}</p>
+                            <p className="text-gray-400 text-[10px] md:text-xs whitespace-nowrap font-medium line-through">{product.price}</p>
+                          </>
+                        ) : (
+                          <p className="text-[#A28B55] text-xs md:text-sm whitespace-nowrap font-medium">{product.price}</p>
+                        )}
+                        {product.stock !== undefined && (
+                          <p className={`text-[9px] md:text-[10px] whitespace-nowrap font-medium mt-1 ${product.stock > 0 ? 'text-gray-500' : 'text-red-500'}`}>
+                            {product.stock > 0 ? `${product.stock} left` : 'Out of stock'}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -580,9 +617,29 @@ export default function App() {
             
             {/* Scrollable Details Area */}
             <div className="w-full md:w-[45%] lg:w-2/5 p-6 md:p-10 lg:p-14 flex flex-col h-[50vh] md:h-full overflow-y-auto bg-[#FAFAFA]">
-              <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-3 block">{selectedProduct[lang].badge} {selectedProduct[lang].subcategory ? `/ ${selectedProduct[lang].subcategory}` : ''}</span>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-[10px] uppercase tracking-widest text-[#A28B55] block">{selectedProduct[lang].badge} {selectedProduct[lang].subcategory ? `/ ${selectedProduct[lang].subcategory}` : ''}</span>
+                {selectedProduct.inOffer && (
+                  <span className="bg-[#8B1C31] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">{selectedProduct.discountRate || 'Offer'}</span>
+                )}
+              </div>
               <h2 className="font-serif text-3xl md:text-4xl text-[#3C101B] mb-3 leading-tight">{selectedProduct[lang].name}</h2>
-              <p className="text-2xl font-medium text-[#A28B55] mb-8">{selectedProduct.price}</p>
+              
+              <div className="flex items-end gap-4 mb-8">
+                {selectedProduct.inOffer && selectedProduct.offerPrice ? (
+                  <>
+                    <p className="text-3xl font-bold text-[#8B1C31]">{selectedProduct.offerPrice}</p>
+                    <p className="text-lg font-medium text-gray-400 line-through pb-0.5">{selectedProduct.price}</p>
+                  </>
+                ) : (
+                  <p className="text-2xl font-medium text-[#A28B55]">{selectedProduct.price}</p>
+                )}
+                {selectedProduct.stock !== undefined && (
+                  <p className={`text-sm font-medium mb-1 ${selectedProduct.stock > 0 ? 'text-gray-500' : 'text-red-500'}`}>
+                    {selectedProduct.stock > 0 ? `${selectedProduct.stock} in stock` : 'Out of stock'}
+                  </p>
+                )}
+              </div>
               
               {selectedProduct.images && selectedProduct.images.length > 0 && (
                 <div className="mb-8">
@@ -611,22 +668,41 @@ export default function App() {
                   <h4 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-4 border-b border-[#3C101B]/10 pb-2">Available Colors</h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedProduct.colors.map((c, i) => (
-                      <span key={i} className="px-4 py-2 bg-white border border-[#3C101B]/10 rounded-md text-[11px] text-[#3C101B] font-medium uppercase tracking-widest shadow-sm">{c}</span>
+                      <button 
+                        key={i} 
+                        onClick={() => setSelectedColor(c)}
+                        className={`px-4 py-2 border rounded-md text-[11px] font-medium uppercase tracking-widest shadow-sm transition-colors ${selectedColor === c || (!selectedColor && i === 0) ? 'bg-[#3C101B] text-white border-[#3C101B]' : 'bg-white border-[#3C101B]/10 text-[#3C101B] hover:bg-[#3C101B]/5'}`}
+                      >
+                        {c}
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
 
               <div className="mt-auto pt-8">
-                <button 
-                  onClick={() => {
-                    addToCart(selectedProduct);
-                    setSelectedProduct(null);
-                  }}
-                  className="w-full bg-[#3C101B] text-white py-4 text-xs uppercase tracking-widest font-bold hover:bg-[#2A0B13] transition-colors shadow-lg"
-                >
-                  Add to Cart
-                </button>
+                {selectedProduct.stock !== undefined && selectedProduct.stock <= 0 ? (
+                  <button 
+                    disabled
+                    className="w-full bg-gray-300 text-gray-500 py-4 text-xs uppercase tracking-widest font-bold cursor-not-allowed shadow-inner"
+                  >
+                    Out of Stock
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      const colorToAdd = selectedProduct.colors && selectedProduct.colors.length > 0 
+                        ? (selectedColor || selectedProduct.colors[0]) 
+                        : undefined;
+                      addToCart(selectedProduct, colorToAdd);
+                      setSelectedProduct(null);
+                      setSelectedColor('');
+                    }}
+                    className="w-full bg-[#3C101B] text-white py-4 text-xs uppercase tracking-widest font-bold hover:bg-[#2A0B13] transition-colors shadow-lg"
+                  >
+                    Add to Cart
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -660,19 +736,28 @@ export default function App() {
                       </div>
                       <div className="flex-1">
                         <h4 className="text-[12px] font-medium text-[#3C101B] mb-1 leading-snug">{item.product[lang].name}</h4>
+                        {item.selectedColor && (
+                          <p className="text-[10px] text-[#3C101B]/70 mb-1 uppercase tracking-widest">Color: {item.selectedColor}</p>
+                        )}
                         <p className="text-[#A28B55] text-[11px] font-medium mb-2">{item.product.price}</p>
                         <div className="flex items-center gap-3">
                            <button 
-                             onClick={() => setCart(cart.map(c => c.product.id === item.product.id ? { ...c, quantity: Math.max(1, c.quantity - 1) } : c))}
+                             onClick={() => setCart(cart.map(c => c.product.id === item.product.id && c.selectedColor === item.selectedColor ? { ...c, quantity: Math.max(1, c.quantity - 1) } : c))}
                              className="w-6 h-6 border border-[#3C101B]/20 flex items-center justify-center text-[#3C101B]"
                            >-</button>
                            <span className="text-[11px]">{item.quantity}</span>
                            <button 
-                             onClick={() => setCart(cart.map(c => c.product.id === item.product.id ? { ...c, quantity: c.quantity + 1 } : c))}
+                             onClick={() => {
+                               if (item.product.stock !== undefined && item.quantity >= item.product.stock) {
+                                 alert('Maximum stock reached');
+                                 return;
+                               }
+                               setCart(cart.map(c => c.product.id === item.product.id && c.selectedColor === item.selectedColor ? { ...c, quantity: c.quantity + 1 } : c));
+                             }}
                              className="w-6 h-6 border border-[#3C101B]/20 flex items-center justify-center text-[#3C101B]"
                            >+</button>
                            <button 
-                             onClick={() => setCart(cart.filter(c => c.product.id !== item.product.id))}
+                             onClick={() => setCart(cart.filter(c => !(c.product.id === item.product.id && c.selectedColor === item.selectedColor)))}
                              className="ml-auto text-[10px] uppercase tracking-widest text-[#3C101B]/50 hover:text-[#3C101B] underline"
                            >Remove</button>
                         </div>
@@ -686,11 +771,30 @@ export default function App() {
             {cart.length > 0 && (
               <div className="p-6 border-t border-[#3C101B]/10 bg-[#EAE5DB]/50">
                  <button 
-                   onClick={() => {
-                     const orderText = cart.map(item => `${item.quantity}x ${item.product[lang].name} (${item.product.price})`).join('\\n');
+                   onClick={async () => {
+                     const orderText = cart.map(item => {
+                       const colorStr = item.selectedColor ? ` - Color: ${item.selectedColor}` : '';
+                       const price = item.product.inOffer && item.product.offerPrice ? item.product.offerPrice : item.product.price;
+                       return `${item.quantity}x ${item.product[lang].name}${colorStr} (${price})`;
+                     }).join('\\n');
                      const message = `Hello Shivgouri, I would like to order:\\n\\n${orderText}`;
                      const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
                      window.open(waLink, '_blank');
+                     
+                     try {
+                       const { saveProduct } = await import('./firebase');
+                       for (const item of cart) {
+                         if (item.product.stock !== undefined && item.product.id) {
+                           const newStock = Math.max(0, item.product.stock - item.quantity);
+                           await saveProduct({ ...item.product, stock: newStock });
+                           setProducts(prev => prev.map(p => p.id === item.product.id ? { ...p, stock: newStock } : p));
+                         }
+                       }
+                       setCart([]);
+                       setIsCartOpen(false);
+                     } catch (e) {
+                       console.error('Failed to update stock:', e);
+                     }
                    }}
                    className="w-full bg-[#3C101B] text-white py-4 text-[11px] uppercase tracking-widest font-bold hover:bg-[#2A0B13] transition-colors"
                  >
