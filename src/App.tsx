@@ -537,9 +537,9 @@ export default function App() {
 
       {/* Product Details Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-6 lg:p-12">
           <div className="absolute inset-0 bg-[#3C101B]/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)}></div>
-          <div className="relative bg-[#FAFAFA] w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row">
+          <div className="relative bg-[#FAFAFA] w-full h-full md:max-w-6xl md:h-[90vh] md:rounded-xl overflow-hidden shadow-2xl flex flex-col md:flex-row">
             <button 
               onClick={() => {
                 const url = `${window.location.origin}?product=${selectedProduct.id}`;
@@ -554,19 +554,20 @@ export default function App() {
                   alert('Link copied to clipboard!');
                 }
               }}
-              className="absolute right-14 top-4 z-10 w-8 h-8 flex items-center justify-center bg-white/80 md:bg-black/5 rounded-full text-[#3C101B]"
+              className="absolute right-14 top-4 md:right-16 md:top-6 z-20 w-10 h-10 flex items-center justify-center bg-white/90 backdrop-blur-md shadow-sm rounded-full text-[#3C101B] hover:bg-white transition-colors"
               title="Share or copy link"
             >
-              <Share size={16} />
+              <Share size={18} />
             </button>
             <button 
               onClick={() => setSelectedProduct(null)}
-              className="absolute right-4 top-4 z-10 w-8 h-8 flex items-center justify-center bg-white/80 md:bg-black/5 rounded-full text-[#3C101B]"
+              className="absolute right-4 top-4 md:right-6 md:top-6 z-20 w-10 h-10 flex items-center justify-center bg-white/90 backdrop-blur-md shadow-sm rounded-full text-[#3C101B] hover:bg-white transition-colors"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
-            <div className="w-full md:w-1/2 bg-[#EAE5DB]">
-              <div className="relative aspect-[4/5] w-full">
+            
+            <div className="w-full md:w-[55%] lg:w-3/5 bg-[#EAE5DB] relative h-[50vh] md:h-full">
+              <div className="relative w-full h-full">
                 {selectedProduct.image ? (
                   <img referrerPolicy="no-referrer" src={selectedProduct.image} alt={selectedProduct[lang].name} className="w-full h-full object-cover" />
                 ) : (
@@ -576,17 +577,19 @@ export default function App() {
                 )}
               </div>
             </div>
-            <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
-              <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-2 block">{selectedProduct[lang].badge}</span>
-              <h2 className="font-serif text-2xl md:text-3xl text-[#3C101B] mb-2 leading-tight">{selectedProduct[lang].name}</h2>
-              <p className="text-xl font-medium text-[#A28B55] mb-6">{selectedProduct.price}</p>
+            
+            {/* Scrollable Details Area */}
+            <div className="w-full md:w-[45%] lg:w-2/5 p-6 md:p-10 lg:p-14 flex flex-col h-[50vh] md:h-full overflow-y-auto bg-[#FAFAFA]">
+              <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-3 block">{selectedProduct[lang].badge} {selectedProduct[lang].subcategory ? `/ ${selectedProduct[lang].subcategory}` : ''}</span>
+              <h2 className="font-serif text-3xl md:text-4xl text-[#3C101B] mb-3 leading-tight">{selectedProduct[lang].name}</h2>
+              <p className="text-2xl font-medium text-[#A28B55] mb-8">{selectedProduct.price}</p>
               
               {selectedProduct.images && selectedProduct.images.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-3">More Views</h4>
-                  <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+                <div className="mb-8">
+                  <h4 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-4 border-b border-[#3C101B]/10 pb-2">More Views</h4>
+                  <div className="flex gap-3 overflow-x-auto pb-2 snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     {selectedProduct.images.map((img, i) => (
-                      <div key={i} className="w-20 aspect-[4/5] flex-shrink-0 bg-[#EAE5DB] snap-start cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setSelectedProduct({...selectedProduct, image: img, images: [selectedProduct.image, ...selectedProduct.images!.filter((_, idx) => idx !== i)]})}>
+                      <div key={i} className="w-20 aspect-[4/5] flex-shrink-0 bg-[#EAE5DB] snap-start cursor-pointer hover:opacity-80 transition-opacity rounded-md overflow-hidden" onClick={() => setSelectedProduct({...selectedProduct, image: img, images: [selectedProduct.image!, ...selectedProduct.images!.filter((_, idx) => idx !== i)]})}>
                         <img referrerPolicy="no-referrer" src={img} className="w-full h-full object-cover" />
                       </div>
                     ))}
@@ -595,33 +598,36 @@ export default function App() {
               )}
               
               {selectedProduct[lang].description && (
-                <div className="mb-6">
-                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                <div className="mb-8">
+                  <h4 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-4 border-b border-[#3C101B]/10 pb-2">Description</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
                     {selectedProduct[lang].description}
                   </p>
                 </div>
               )}
 
               {selectedProduct.colors && selectedProduct.colors.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-3">Available Colors</h4>
+                <div className="mb-8">
+                  <h4 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-4 border-b border-[#3C101B]/10 pb-2">Available Colors</h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedProduct.colors.map((c, i) => (
-                      <span key={i} className="px-3 py-1.5 bg-[#EAE5DB] text-[11px] text-[#3C101B]/80 uppercase tracking-widest">{c}</span>
+                      <span key={i} className="px-4 py-2 bg-white border border-[#3C101B]/10 rounded-md text-[11px] text-[#3C101B] font-medium uppercase tracking-widest shadow-sm">{c}</span>
                     ))}
                   </div>
                 </div>
               )}
 
-              <button 
-                onClick={() => {
-                  addToCart(selectedProduct);
-                  setSelectedProduct(null);
-                }}
-                className="w-full bg-[#3C101B] text-white py-4 text-[11px] uppercase tracking-widest font-bold hover:bg-[#2A0B13] transition-colors mt-auto"
-              >
-                Add to Cart
-              </button>
+              <div className="mt-auto pt-8">
+                <button 
+                  onClick={() => {
+                    addToCart(selectedProduct);
+                    setSelectedProduct(null);
+                  }}
+                  className="w-full bg-[#3C101B] text-white py-4 text-xs uppercase tracking-widest font-bold hover:bg-[#2A0B13] transition-colors shadow-lg"
+                >
+                  Add to Cart
+                </button>
+              </div>
             </div>
           </div>
         </div>
