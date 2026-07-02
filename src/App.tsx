@@ -9,32 +9,63 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share } from 'lucide-react';
+import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck } from 'lucide-react';
 import { Product, Offer } from './types';
 import AdminPanel from './components/AdminPanel';
-import { fetchProducts, fetchCategories, fetchOffers } from './firebase';
+import { fetchProducts, fetchCategories, fetchOffers, saveProduct, saveCategory, saveOffer } from './firebase';
 
 const content = {
   en: {
     nav: { home: 'Home', collection: 'Collection', about: 'About', contact: 'Contact' },
-    hero: { pre: 'Handcrafted Excellence', title1: 'Elegance in', title2: 'Every Weave', desc: 'Celebrating the timeless art of traditional Indian handlooms and modern grace. Discover sarees crafted with heritage and passion.', explore: 'Explore Collection' },
+    hero: { pre: 'Celebrate the', title1: 'Essence of', title2: 'Womanhood', desc: 'with Timeless Fashion', explore: 'Shop Collection' },
     collection: { title: 'The Shivgouri Collection', desc: 'Our curated selection of premium silks, organzas, and cottons, ethically sourced directly from master weavers.', viewAll: 'View All', orderBtn: 'Order via WhatsApp', filterAll: 'All' },
     about: { title: 'Our Heritage', desc: 'Shivgouri is more than a boutique; it is an homage to the intricate craftsmanship of generations past. Every thread we select is a testament to the unparalleled skill of our artisans.' },
-    footer: { address: 'Shivgouri Silk Sarees', city: 'Gokak, Karnataka', visit: 'Visit our physical store to experience the textures in person, or order directly online via our dedicated WhatsApp concierge.', rights: 'All rights reserved.' }
+    footer: { address: 'Shivgouri Silk Sarees', city: 'Gokak, Karnataka', visit: 'Visit our physical store to experience the textures in person, or order directly online via our dedicated WhatsApp concierge.', rights: 'All rights reserved.' },
+    checkout: { title: 'Before you checkout', rule1: 'Parcel opening video is strictly required for any claims.', rule2: ['Please enter correct address and number. ', '₹70 extra charge', ' if details are wrong.'], rule3: 'Check the size properly before ordering.', rule4: 'Please read our return and exchange policy before placing the order.', btn: 'Confirm and Checkout' },
+    daily: { tag: 'Limited Time', title: 'Daily Exclusives', desc: 'Special selections for today. These pieces are available at exclusive prices for a limited time.' },
+    curation: { title: 'Not everything woven deserves to be worn.', desc: 'For generations, we have chosen — so you never have to settle.', tag: 'this is curation, not commerce.' },
+    collectionSection: { tag: 'The Noteworthy', title: 'Shivgouri by Signatures', desc: 'Lustrous silks, intricate zari — every piece chosen at the source and held to one standard. Finest. Reserved and preserved.' },
+    gallery: { tag: 'Visit the Gallery', title: 'Experience the legacy of Shivgouri.' },
+    newsletter: { tag: 'Subscribe to our emails', title: 'Join Our Journey', desc: 'Be the first to explore special offers, exclusive discounts, and all our latest updates.', btn: 'Subscribe' },
+    cart: { title: 'Your Cart', empty: 'Your cart is empty', checkout: 'Checkout via WhatsApp', total: 'Total' },
+    emptyProducts: 'No products found in this category.'
   },
   kn: {
     nav: { home: 'ಮುಖಪುಟ', collection: 'ಸಂಗ್ರಹ', about: 'ಬಗ್ಗೆ', contact: 'ಸಂಪರ್ಕ' },
-    hero: { pre: 'ಕರಕುಶಲ ಶ್ರೇಷ್ಠತೆ', title1: 'ಪ್ರತಿ ನೇಯ್ಗೆಯಲ್ಲೂ', title2: 'ಸೊಬಗು', desc: 'ಸಾಂಪ್ರದಾಯಿಕ ಭಾರತೀಯ ಕೈಮಗ್ಗಗಳ ಮತ್ತು ಆಧುನಿಕ ಸೊಬಗಿನ ಸಮಯಾತೀತ ಕಲೆಯನ್ನು ಆಚರಿಸಲಾಗುತ್ತಿದೆ. ಪರಂಪರೆ ಮತ್ತು ಉತ್ಸಾಹದಿಂದ ರಚಿಸಲಾದ ಸೀರೆಗಳನ್ನು ಅನ್ವೇಷಿಸಿ.', explore: 'ಸಂಗ್ರಹ ಅನ್ವೇಷಿಸಿ' },
+    hero: { pre: 'ಆಚರಿಸಿ', title1: 'ಸ್ತ್ರೀತ್ವದ', title2: 'ಸಾರವನ್ನು', desc: 'ಸಮಯಾತೀತ ಫ್ಯಾಷನ್‌ನೊಂದಿಗೆ', explore: 'ಸಂಗ್ರಹ ಖರೀದಿಸಿ' },
     collection: { title: 'ಶಿವಗೌರಿ ಸಂಗ್ರಹ', desc: 'ನುರಿತ ನೇಕಾರರಿಂದ ನೇರವಾಗಿ ಪಡೆದ ಪ್ರೀಮಿಯಂ ರೇಷ್ಮೆ, ಆರ್ಗನ್ಜಾ ಮತ್ತು ಕಾಟನ್‌ಗಳ ನಮ್ಮ ವಿಶೇಷ ಆಯ್ಕೆ.', viewAll: 'ಎಲ್ಲ ವೀಕ್ಷಿಸಿ', orderBtn: 'ವಾಟ್ಸಾಪ್ ಮೂಲಕ ಆರ್ಡರ್ ಮಾಡಿ', filterAll: 'ಎಲ್ಲ' },
     about: { title: 'ನಮ್ಮ ಪರಂಪರೆ', desc: 'ಶಿವಗೌರಿ ಕೇವಲ ಒಂದು ಮಳಿಗೆಯಲ್ಲ; ಇದು ಹಿಂದಿನ ತಲೆಮಾರುಗಳ ಸಂಕೀರ್ಣ ಕರಕುಶಲತೆಗೆ ಸಲ್ಲಿಸುವ ಗೌರವ. ನಾವು ಆಯ್ಕೆ ಮಾಡುವ ಪ್ರತಿಯೊಂದು ದಾರವೂ ನಮ್ಮ ಕುಶಲಕರ್ಮಿಗಳ ಅಪ್ರತಿಮ ಕೌಶಲ್ಯಕ್ಕೆ ಸಾಕ್ಷಿಯಾಗಿದೆ.' },
-    footer: { address: 'ಶಿವಗೌರಿ ಸಿಲ್ಕ್ ಸೀರೆಗಳು', city: 'ಗೋಕಾಕ್, ಕರ್ನಾಟಕ', visit: 'ಬಟ್ಟೆಗಳನ್ನು ಖುದ್ದಾಗಿ ನೋಡಲು ನಮ್ಮ ಮಳಿಗೆಗೆ ಭೇಟಿ ನೀಡಿ, ಅಥವಾ ವಾಟ್ಸಾಪ್ ಮೂಲಕ ನೇರವಾಗಿ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಆರ್ಡರ್ ಮಾಡಿ.', rights: 'ಎಲ್ಲ ಹಕ್ಕುಗಳನ್ನು ಕಾಯ್ದಿರಿಸಲಾಗಿದೆ.' }
+    footer: { address: 'ಶಿವಗೌರಿ ಸಿಲ್ಕ್ ಸೀರೆಗಳು', city: 'ಗೋಕಾಕ್, ಕರ್ನಾಟಕ', visit: 'ಬಟ್ಟೆಗಳನ್ನು ಖುದ್ದಾಗಿ ನೋಡಲು ನಮ್ಮ ಮಳಿಗೆಗೆ ಭೇಟಿ ನೀಡಿ, ಅಥವಾ ವಾಟ್ಸಾಪ್ ಮೂಲಕ ನೇರವಾಗಿ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಆರ್ಡರ್ ಮಾಡಿ.', rights: 'ಎಲ್ಲ ಹಕ್ಕುಗಳನ್ನು ಕಾಯ್ದಿರಿಸಲಾಗಿದೆ.' },
+    checkout: { title: 'ನೀವು ಚೆಕ್ ಔಟ್ ಮಾಡುವ ಮೊದಲು', rule1: 'ಯಾವುದೇ ಕ್ಲೈಮ್‌ಗಳಿಗಾಗಿ ಪಾರ್ಸೆಲ್ ತೆರೆಯುವ ವೀಡಿಯೊ ಕಡ್ಡಾಯವಾಗಿದೆ.', rule2: ['ದಯವಿಟ್ಟು ಸರಿಯಾದ ವಿಳಾಸ ಮತ್ತು ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ. ವಿವರಗಳು ತಪ್ಪಾಗಿದ್ದರೆ ', '₹70 ಹೆಚ್ಚುವರಿ ಶುಲ್ಕ', '.'], rule3: 'ಆರ್ಡರ್ ಮಾಡುವ ಮೊದಲು ಗಾತ್ರವನ್ನು ಸರಿಯಾಗಿ ಪರಿಶೀಲಿಸಿ.', rule4: 'ಆರ್ಡರ್ ಮಾಡುವ ಮೊದಲು ದಯವಿಟ್ಟು ನಮ್ಮ ರಿಟರ್ನ್ ಮತ್ತು ಎಕ್ಸ್‌ಚೇಂಜ್ ಪಾಲಿಸಿಯನ್ನು ಓದಿ.', btn: 'ಖಚಿತಪಡಿಸಿ ಮತ್ತು ಚೆಕ್‌ಔಟ್ ಮಾಡಿ' },
+    daily: { tag: 'ಸೀಮಿತ ಸಮಯ', title: 'ದೈನಂದಿನ ವಿಶೇಷಗಳು', desc: 'ಇಂದಿನ ವಿಶೇಷ ಆಯ್ಕೆಗಳು. ಇವು ಸೀಮಿತ ಸಮಯದವರೆಗೆ ವಿಶೇಷ ಬೆಲೆಯಲ್ಲಿ ಲಭ್ಯವಿದೆ.' },
+    curation: { title: 'ನೇಯ್ದ ಪ್ರತಿಯೊಂದೂ ಧರಿಸಲು ಯೋಗ್ಯವಾಗಿರುವುದಿಲ್ಲ.', desc: 'ತಲೆಮಾರುಗಳಿಂದ ನಾವು ಆಯ್ಕೆ ಮಾಡಿದ್ದೇವೆ — ಆದ್ದರಿಂದ ನೀವು ಎಂದಿಗೂ ರಾಜಿಯಾಗಬೇಕಾಗಿಲ್ಲ.', tag: 'ಇದು ಕ್ಯುರೇಶನ್, ವ್ಯಾಪಾರವಲ್ಲ.' },
+    collectionSection: { tag: 'ಗಮನಾರ್ಹವಾದವು', title: 'ಶಿವಗೌರಿಯ ಸಿಗ್ನೇಚರ್ಸ್', desc: 'ಹೊಳಪಿನ ರೇಷ್ಮೆ, ಸಂಕೀರ್ಣ ಜರಿ — ಪ್ರತಿಯೊಂದು ತುಣುಕನ್ನು ಮೂಲದಲ್ಲಿಯೇ ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಒಂದೇ ಗುಣಮಟ್ಟಕ್ಕೆ ಒಳಪಡಿಸಲಾಗಿದೆ. ಅತ್ಯುತ್ತಮವಾದವು.' },
+    gallery: { tag: 'ಗ್ಯಾಲರಿಗೆ ಭೇಟಿ ನೀಡಿ', title: 'ಶಿವಗೌರಿಯ ಪರಂಪರೆಯನ್ನು ಅನುಭವಿಸಿ.' },
+    newsletter: { tag: 'ನಮ್ಮ ಇಮೇಲ್‌ಗಳಿಗೆ ಚಂದಾದಾರರಾಗಿ', title: 'ನಮ್ಮ ಪ್ರಯಾಣದಲ್ಲಿ ಸೇರಿಕೊಳ್ಳಿ', desc: 'ವಿಶೇಷ ಕೊಡುಗೆಗಳು, ರಿಯಾಯಿತಿಗಳು ಮತ್ತು ನಮ್ಮ ಇತ್ತೀಚಿನ ನವೀಕರಣಗಳನ್ನು ಮೊದಲು ಅನ್ವೇಷಿಸಲು ಚಂದಾದಾರರಾಗಿ.', btn: 'ಚಂದಾದಾರರಾಗಿ' },
+    cart: { title: 'ನಿಮ್ಮ ಕಾರ್ಟ್', empty: 'ನಿಮ್ಮ ಕಾರ್ಟ್ ಖಾಲಿಯಾಗಿದೆ', checkout: 'ವಾಟ್ಸಾಪ್ ಮೂಲಕ ಚೆಕ್‌ಔಟ್ ಮಾಡಿ', total: 'ಒಟ್ಟು' },
+    emptyProducts: 'ಈ ವಿಭಾಗದಲ್ಲಿ ಯಾವುದೇ ಉತ್ಪನ್ನಗಳು ಕಂಡುಬಂದಿಲ್ಲ.'
+  },
+  hi: {
+    nav: { home: 'होम', collection: 'संग्रह', about: 'हमारे बारे में', contact: 'संपर्क' },
+    hero: { pre: 'मनाएं', title1: 'नारीत्व का', title2: 'सार', desc: 'कालातीत फैशन के साथ', explore: 'संग्रह खरीदें' },
+    collection: { title: 'शिवगौरी संग्रह', desc: 'हमारे मास्टर बुनकरों से सीधे नैतिक रूप से प्राप्त प्रीमियम रेशम, ऑर्गेना, और कपास का विशेष चयन।', viewAll: 'सभी देखें', orderBtn: 'WhatsApp के माध्यम से ऑर्डर करें', filterAll: 'सभी' },
+    about: { title: 'हमारी विरासत', desc: 'शिवगौरी एक बुटीक से कहीं अधिक है; यह पिछली पीढ़ियों की जटिल शिल्प कौशल को एक श्रद्धांजलि है। हमारे द्वारा चुना गया प्रत्येक धागा हमारे कारीगरों के अद्वितीय कौशल का प्रमाण है।', },
+    footer: { address: 'शिवगौरी सिल्क साड़ी', city: 'गोकक, कर्नाटक', visit: 'बनावट का व्यक्तिगत रूप से अनुभव करने के लिए हमारे स्टोर पर आएं, या हमारे समर्पित WhatsApp के माध्यम से सीधे ऑनलाइन ऑर्डर करें।', rights: 'सभी अधिकार सुरक्षित।' },
+    checkout: { title: 'चेकआउट करने से पहले', rule1: 'किसी भी दावे के लिए पार्सल खोलने का वीडियो सख्त रूप से आवश्यक है।', rule2: ['कृपया सही पता और नंबर दर्ज करें। यदि विवरण गलत हैं तो ', '₹70 अतिरिक्त शुल्क', '।'], rule3: 'ऑर्डर करने से पहले आकार की ठीक से जांच करें।', rule4: 'कृपया ऑर्डर देने से पहले हमारी रिटर्न और एक्सचेंज नीति पढ़ें।', btn: 'पुष्टि करें और चेकआउट करें' },
+    daily: { tag: 'सीमित समय', title: 'दैनिक विशेष', desc: 'आज के लिए विशेष चयन। ये पीस सीमित समय के लिए विशेष कीमतों पर उपलब्ध हैं।' },
+    curation: { title: 'बुनी हुई हर चीज़ पहनने लायक नहीं होती।', desc: 'पीढ़ियों से, हमने चुना है - ताकि आपको कभी समझौता न करना पड़े।', tag: 'यह क्युरेशन है, वाणिज्य नहीं।' },
+    collectionSection: { tag: 'उल्लेखनीय', title: 'शिवगौरी सिग्नेचर्स', desc: 'चमकदार रेशम, जटिल ज़री — हर एक पीस को स्रोत पर चुना गया और एक ही मानक पर रखा गया। बेहतरीन।' },
+    gallery: { tag: 'गैलरी में आएं', title: 'शिवगौरी की विरासत का अनुभव करें।' },
+    newsletter: { tag: 'हमारे ईमेल की सदस्यता लें', title: 'हमारी यात्रा में शामिल हों', desc: 'विशेष प्रस्तावों, अनन्य छूटों और हमारे सभी नवीनतम अपडेटों का पता लगाने वाले पहले व्यक्ति बनें।', btn: 'सदस्यता लें' },
+    cart: { title: 'आपका कार्ट', empty: 'आपका कार्ट खाली है', checkout: 'व्हाट्सएप के माध्यम से चेकआउट करें', total: 'कुल' },
+    emptyProducts: 'इस श्रेणी में कोई उत्पाद नहीं मिला।'
   }
 };
 
 type CartItem = { product: Product; quantity: number; selectedColor?: string };
 
 export default function App() {
-  const [lang, setLang] = useState<'en' | 'kn'>('en');
+  const [lang, setLang] = useState<'en' | 'kn' | 'hi'>('en');
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('Womens');
   const [activeCategory, setActiveCategory] = useState<string>('All');
@@ -50,6 +81,7 @@ export default function App() {
   const [showOffer, setShowOffer] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedColor, setSelectedColor] = useState<string>('');
+  const [showCheckoutWarning, setShowCheckoutWarning] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -58,11 +90,8 @@ export default function App() {
         const fetchedProds = await fetchProducts();
         const fetchedOffers = await fetchOffers();
         
-        let finalCats = fetchedCats;
-        let finalProds = fetchedProds;
-
-        setCategories(finalCats);
-        setProducts(finalProds);
+        setCategories(fetchedCats);
+        setProducts(fetchedProds);
         setOffers(fetchedOffers);
         
         if (fetchedOffers.some(o => o.isActive)) {
@@ -72,7 +101,7 @@ export default function App() {
         const params = new URLSearchParams(window.location.search);
         const sharedProductId = params.get('product');
         if (sharedProductId) {
-          const sharedProduct = finalProds.find(p => String(p.id) === sharedProductId);
+          const sharedProduct = fetchedProds.find(p => String(p.id) === sharedProductId);
           if (sharedProduct) {
             setSelectedProduct(sharedProduct);
           }
@@ -88,6 +117,33 @@ export default function App() {
 
   const waNumber = '918329732432';
   const t = content[lang];
+
+  const handleCheckout = async () => {
+    const orderText = cart.map(item => {
+      const colorStr = item.selectedColor ? ` - Color: ${item.selectedColor}` : '';
+      const price = (item.product.inOffer || item.product.isDailyOffer) && item.product.offerPrice ? item.product.offerPrice : item.product.price;
+      return `${item.quantity}x ${(item.product[lang] || item.product.en).name}${colorStr} (${price})`;
+    }).join('\n');
+    const message = `Hello Shivgouri, I would like to order:\n\n${orderText}`;
+    const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+    window.open(waLink, '_blank');
+    
+    try {
+      const { saveProduct } = await import('./firebase');
+      for (const item of cart) {
+        if (item.product.stock !== undefined && item.product.id) {
+          const newStock = Math.max(0, item.product.stock - item.quantity);
+          await saveProduct({ ...item.product, stock: newStock });
+          setProducts(prev => prev.map(p => p.id === item.product.id ? { ...p, stock: newStock } : p));
+        }
+      }
+      setCart([]);
+      setIsCartOpen(false);
+      setShowCheckoutWarning(false);
+    } catch (e) {
+      console.error('Failed to update stock:', e);
+    }
+  };
 
   const addToCart = (product: Product, selectedColor?: string) => {
     if (product.stock !== undefined && product.stock <= 0) {
@@ -139,7 +195,6 @@ export default function App() {
     const matchesSection = pSection === activeSection;
     const matchesCategory = activeCategory === 'All' || p.en.badge === activeCategory;
     const matchesSubcategory = activeSubcategory === 'All' || p.en.subcategory === activeSubcategory;
-                          
     return matchesSection && matchesCategory && matchesSubcategory;
   });
 
@@ -163,32 +218,37 @@ export default function App() {
         {/* Top bar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <div className="flex justify-between items-center h-16 relative">
-            <div className="flex items-center gap-4 w-1/3">
+            <div className="flex-1 flex items-center justify-start">
               <button className="md:hidden text-white hover:opacity-50 transition-opacity">
                 <Menu size={24} strokeWidth={1.5} />
               </button>
             </div>
             
             {/* Logo */}
-            <div className="flex-1 flex justify-center w-1/3 transition-opacity opacity-100">
+            <div className="flex-shrink-0 flex justify-center text-center transition-opacity opacity-100 px-1 sm:px-4">
               <a href="#" className="flex items-center gap-2 group">
-                <span className="font-logo text-2xl tracking-[0.1em] font-medium text-white uppercase">
+                <span className="font-logo text-lg sm:text-2xl tracking-[0.1em] font-medium text-white uppercase whitespace-nowrap">
                   Shivgouri
                 </span>
               </a>
             </div>
 
             {/* Right Icons */}
-            <div className="flex items-center justify-end gap-6 text-[11px] uppercase tracking-widest w-1/3">
-              <a href="https://www.instagram.com/shivgouri_silksarees_gokak" target="_blank" rel="noopener noreferrer" className="hidden md:flex items-center gap-2 hover:opacity-70 transition-opacity">
+            <div className="flex-1 flex items-center justify-end gap-2 sm:gap-6 text-[9px] sm:text-[11px] uppercase tracking-widest">
+              <a href="https://www.instagram.com/shivgouri_silksarees_gokak" target="_blank" rel="noopener noreferrer" className="hidden lg:flex items-center gap-2 hover:opacity-70 transition-opacity">
                 <span>Instagram</span>
               </a>
-              <button onClick={() => setLang(lang === 'en' ? 'kn' : 'en')} className="hover:opacity-70 transition-opacity">
-                 {lang === 'en' ? 'ಕನ್ನಡ' : 'EN'}
-              </button>
-              <button onClick={() => setIsCartOpen(true)} className="hover:opacity-70 transition-opacity flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button onClick={() => setLang('en')} className={`hover:opacity-70 transition-opacity ${lang === 'en' ? 'font-bold' : 'opacity-50'}`}>EN</button>
+                <span className="opacity-50">|</span>
+                <button onClick={() => setLang('hi')} className={`hover:opacity-70 transition-opacity ${lang === 'hi' ? 'font-bold' : 'opacity-50'}`}>HI</button>
+                <span className="opacity-50">|</span>
+                <button onClick={() => setLang('kn')} className={`hover:opacity-70 transition-opacity ${lang === 'kn' ? 'font-bold' : 'opacity-50'}`}>KN</button>
+              </div>
+              <button onClick={() => setIsCartOpen(true)} className="hover:opacity-70 transition-opacity flex items-center gap-1 sm:gap-2 relative">
                 <ShoppingBag size={20} strokeWidth={1.5} />
-                <span className="hidden sm:inline">Cart ({cart.length})</span>
+                <span className="hidden sm:inline">({cart.length})</span>
+                {cart.length > 0 && <span className="sm:hidden absolute -top-1 -right-1 bg-white text-[#3C101B] text-[8px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full">{cart.length}</span>}
               </button>
             </div>
           </div>
@@ -214,29 +274,36 @@ export default function App() {
       </nav>
 
       {/* Hero Section */}
-      <section className="flex flex-col md:flex-row min-h-[70vh] bg-[#F7F4EF]">
-        {/* Left Image */}
-        <div className="w-full md:w-[55%] relative h-[50vh] md:h-auto md:flex-1">
+      <section className="relative min-h-[70vh] md:min-h-[85vh] flex items-center bg-[#F7F4EF] overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0 w-full h-full">
            <img 
              src="/853180.jpg"
              alt="Shivgouri Elegance"
-             className="absolute inset-0 w-full h-full object-cover"
+             className="absolute inset-0 w-full h-full object-cover object-center md:object-top"
            />
+           {/* Gradient overlay for better text readability on the left */}
+           <div className="absolute inset-0 bg-gradient-to-r from-[#F7F4EF]/90 via-[#F7F4EF]/50 to-transparent w-full h-full"></div>
         </div>
-        {/* Right Content */}
-        <div className="w-full md:w-[45%] flex flex-col justify-center items-center p-12 text-center">
-           <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#3C101B] mb-6 leading-tight">
-             Where elegance is <br/><span className="italic">quiet.</span>
-           </h1>
-           <p className="text-[12px] uppercase tracking-widest text-[#3C101B]/80 mb-10 max-w-xs leading-relaxed">
-             From the loom. To the woman who knows the difference.
-           </p>
-           <button 
-             onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}
-             className="bg-[#3C101B] text-white px-8 py-3 rounded-full text-[10px] uppercase tracking-widest font-medium hover:bg-[#2A0B13] transition-colors"
-           >
-             Shop Collection
-           </button>
+        {/* Left Content */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 flex justify-start">
+           <div className="w-full md:w-[55%] text-left pt-20 md:pt-0">
+             <p className="text-2xl sm:text-3xl font-serif text-[#3C101B] mb-2 drop-shadow-sm">
+               {t.hero.pre}
+             </p>
+             <h1 className="font-serif text-5xl sm:text-6xl lg:text-[5.5rem] text-[#3C101B] mb-4 leading-[1.1] drop-shadow-sm">
+               {t.hero.title1}<br/>{t.hero.title2}
+             </h1>
+             <p className="text-xl sm:text-2xl text-[#3C101B]/90 mb-10 font-serif">
+               {t.hero.desc}
+             </p>
+             <button 
+               onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}
+               className="bg-[#3C101B] text-white px-8 py-4 rounded-full text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-black transition-colors shadow-lg inline-flex"
+             >
+               {t.hero.explore}
+             </button>
+           </div>
         </div>
       </section>
 
@@ -246,9 +313,9 @@ export default function App() {
           <div className="whitespace-nowrap animate-marquee flex items-center gap-8 w-max">
             {[...offers.filter(o => o.isActive), ...offers.filter(o => o.isActive), ...offers.filter(o => o.isActive), ...offers.filter(o => o.isActive)].map((offer, idx) => (
               <span key={idx} className="text-[11px] font-bold tracking-widest uppercase flex items-center gap-8">
-                 <span>{offer[lang].title}</span>
+                 <span>{(offer[lang] || offer.en).title}</span>
                  <span className="opacity-50 text-[#A28B55]">✦</span>
-                 <span>{offer[lang].description}</span>
+                 <span>{(offer[lang] || offer.en).description}</span>
                  <span className="opacity-50 text-[#A28B55]">✦</span>
               </span>
             ))}
@@ -256,17 +323,114 @@ export default function App() {
         </div>
       )}
 
+      {/* Daily Offers Section */}
+      {products.filter(p => p.isDailyOffer).length > 0 && (
+        <section className="py-16 md:py-24 bg-[#3C101B] relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#A28B55 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#A28B55] font-medium mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> {t.daily.tag}
+                </p>
+                <h2 className="font-serif text-4xl md:text-5xl text-[#F3EFE8] italic">
+                   {t.daily.title}
+                </h2>
+              </div>
+              <p className="text-[#F3EFE8]/70 text-sm max-w-sm md:text-right">
+                {t.daily.desc}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {products.filter(p => p.isDailyOffer).map(product => {
+                const pData = product[lang] || product.en;
+                return (
+                  <div key={product.id} className="flex flex-col group cursor-pointer" onClick={() => setSelectedProduct(product)}>
+                    <div className="relative aspect-[4/5] bg-[#EAE5DB] mb-4 overflow-hidden rounded-md shadow-lg border border-white/10">
+                       {product.image ? (
+                         <img referrerPolicy="no-referrer" src={product.image} alt={pData.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                       ) : (
+                         <div className="w-full h-full flex items-center justify-center text-[#3C101B]/20">
+                           <ImageIcon size={48} strokeWidth={1} />
+                         </div>
+                       )}
+                       
+                       <div className="absolute top-3 left-3 bg-[#A28B55] text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 shadow-md">
+                         Daily Offer
+                       </div>
+                       
+                       {(product.inOffer || product.isDailyOffer) && product.discountRate && (
+                         <div className="absolute top-12 left-3 bg-[#8B1C31] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-1 shadow-sm mt-1">
+                           {product.discountRate}
+                         </div>
+                       )}
+
+                       {product.stock !== undefined && product.stock > 0 && product.stock < 5 && (
+                         <div className="absolute top-3 right-3 bg-orange-500 text-white text-[9px] font-bold uppercase tracking-widest px-2 py-1 shadow-sm">
+                           Low Stock
+                         </div>
+                       )}
+                       
+                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                         {product.stock !== undefined && product.stock <= 0 ? (
+                           <button 
+                             disabled
+                             className="w-full bg-white/20 backdrop-blur-sm text-white/50 py-3 text-[10px] uppercase tracking-widest font-medium cursor-not-allowed border border-white/10"
+                           >
+                             Out of Stock
+                           </button>
+                         ) : (
+                           <button 
+                             onClick={(e) => { 
+                               e.stopPropagation(); 
+                               const colorToAdd = product.colors && product.colors.length > 0 ? product.colors[0] : undefined;
+                               addToCart(product, colorToAdd); 
+                             }}
+                             className="w-full bg-white text-[#3C101B] py-3 text-[10px] uppercase tracking-widest font-bold hover:bg-[#A28B55] hover:text-white transition-colors"
+                           >
+                             Add to Cart
+                           </button>
+                         )}
+                       </div>
+                    </div>
+                    <div className="px-1 text-[#F3EFE8]">
+                      <h4 className="font-serif text-lg mb-1 group-hover:text-[#A28B55] transition-colors line-clamp-1">{pData.name}</h4>
+                      <div className="flex flex-col items-start gap-1">
+                        {(product.inOffer || product.isDailyOffer) && product.offerPrice ? (
+                          <div className="flex items-center gap-3">
+                            <p className="text-[#A28B55] font-bold">{product.offerPrice}</p>
+                            <p className="text-white/40 text-[11px] line-through">{product.price}</p>
+                          </div>
+                        ) : (
+                          <p className="text-[#A28B55] font-medium">{product.price}</p>
+                        )}
+                        {product.stock !== undefined && (
+                          <p className={`text-[9px] md:text-[10px] whitespace-nowrap font-medium ${product.stock > 0 ? 'text-[#F3EFE8]/50' : 'text-red-400'}`}>
+                            {product.stock > 0 ? `${product.stock} left` : 'Out of stock'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Curation Section */}
       <section className="py-24 px-6 max-w-7xl mx-auto text-center md:text-left">
          <div className="max-w-3xl mx-auto md:mx-0 border-l-2 border-[#A28B55] pl-6 mb-16">
            <h2 className="font-serif text-3xl md:text-4xl text-[#3C101B] mb-4 italic">
-             Not everything woven deserves to be worn.
+             {t.curation.title}
            </h2>
            <p className="text-[#3C101B]/70 font-serif text-lg md:text-xl mb-6">
-             For generations, we have chosen — so you never have to settle.
+             {t.curation.desc}
            </p>
            <p className="text-[10px] uppercase tracking-[0.2em] text-[#A28B55] font-medium">
-             this is curation, not commerce.
+             {t.curation.tag}
            </p>
          </div>
 
@@ -297,7 +461,7 @@ export default function App() {
                    <div className="absolute inset-0 bg-gradient-to-t from-[#3C101B]/90 via-[#3C101B]/20 to-transparent pointer-events-none" />
                    <div className="absolute bottom-6 left-6 right-6 flex flex-col items-start justify-end">
                      <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-2 block font-medium shadow-black drop-shadow-md">Curated</span>
-                     <h3 className="font-serif text-2xl md:text-3xl text-white mb-2 drop-shadow-lg">{lang === 'en' ? cat.en : cat.kn}</h3>
+                     <h3 className="font-serif text-2xl md:text-3xl text-white mb-2 drop-shadow-lg">{lang === 'hi' ? (cat.hi || cat.en) : lang === 'kn' ? (cat.kn || cat.en) : cat.en}</h3>
                    </div>
                  </div>
                </div>
@@ -327,12 +491,12 @@ export default function App() {
       {/* Main Collection / Sliders */}
       <section id="collection" className="py-20 bg-[#F3EFE8]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-[#A28B55] font-medium mb-4">The Noteworthy</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#A28B55] font-medium mb-4">{t.collectionSection.tag}</p>
           <h2 className="font-serif text-4xl md:text-5xl text-[#3C101B] italic mb-6">
-             Shivgouri by Signatures
+             {t.collectionSection.title}
           </h2>
           <p className="text-[#3C101B]/80 font-serif text-lg max-w-2xl mb-12">
-             Lustrous silks, intricate zari — every piece chosen at the source and held to one standard. Finest. Reserved and preserved.
+             {t.collectionSection.desc}
           </p>
 
           {/* Section Tabs */}
@@ -367,7 +531,7 @@ export default function App() {
                  className={`whitespace-nowrap flex items-baseline gap-2 transition-colors ${activeCategory === cat.en ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
                >
                  <span className="text-[10px] tracking-widest">{String(idx + 1).padStart(2, '0')}</span>
-                 <span className="font-serif text-lg">{lang === 'en' ? cat.en : cat.kn}</span>
+                 <span className="font-serif text-lg">{lang === 'hi' ? (cat.hi || cat.en) : lang === 'kn' ? (cat.kn || cat.en) : cat.en}</span>
                </button>
              ))}
           </div>
@@ -384,7 +548,7 @@ export default function App() {
                   onClick={() => setActiveSubcategory('All')}
                   className={`whitespace-nowrap flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-medium transition-colors ${activeSubcategory === 'All' ? 'bg-[#3C101B] text-white border-[#3C101B]' : 'bg-transparent text-[#3C101B]/60 border-[#3C101B]/20 hover:border-[#3C101B]/40'}`}
                 >
-                  All {lang === 'en' ? currentCat.en : currentCat.kn}
+                  All {lang === 'hi' ? (currentCat.hi || currentCat.en) : lang === 'kn' ? (currentCat.kn || currentCat.en) : currentCat.en}
                 </button>
                 {currentCat.subcategories.map(subcat => (
                   <button 
@@ -392,7 +556,7 @@ export default function App() {
                     onClick={() => setActiveSubcategory(subcat.en)}
                     className={`whitespace-nowrap flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-medium transition-colors ${activeSubcategory === subcat.en ? 'bg-[#3C101B] text-white border-[#3C101B]' : 'bg-transparent text-[#3C101B]/60 border-[#3C101B]/20 hover:border-[#3C101B]/40'}`}
                   >
-                    {lang === 'en' ? subcat.en : subcat.kn}
+                    {lang === 'hi' ? (subcat.hi || subcat.en) : lang === 'kn' ? (subcat.kn || subcat.en) : subcat.en}
                   </button>
                 ))}
               </div>
@@ -412,7 +576,7 @@ export default function App() {
           <div className="relative group/slider">
             <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" id="slider">
               {filteredProducts.length > 0 ? filteredProducts.map(product => {
-                const pData = product[lang];
+                const pData = product[lang] || product.en;
                 const message = `Hello Shivgouri, I am interested in purchasing the ${pData.name} (${product.price}).`;
                 const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
                 return (
@@ -425,9 +589,14 @@ export default function App() {
                            <ImageIcon size={48} strokeWidth={1} />
                          </div>
                        )}
-                       {product.inOffer && (
+                       {(product.inOffer || product.isDailyOffer) && (
                          <div className="absolute top-3 left-3 bg-[#8B1C31] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-1 shadow-sm">
                            {product.discountRate || 'Offer'}
+                         </div>
+                       )}
+                       {product.stock !== undefined && product.stock > 0 && product.stock < 5 && (
+                         <div className="absolute top-3 right-3 bg-orange-500 text-white text-[9px] font-bold uppercase tracking-widest px-2 py-1 shadow-sm">
+                           Low Stock
                          </div>
                        )}
                        {/* Add to Cart Overlay */}
@@ -461,7 +630,7 @@ export default function App() {
                         )}
                       </div>
                       <div className="flex flex-col items-end">
-                        {product.inOffer && product.offerPrice ? (
+                        {(product.inOffer || product.isDailyOffer) && product.offerPrice ? (
                           <>
                             <p className="text-[#8B1C31] text-xs md:text-sm whitespace-nowrap font-bold">{product.offerPrice}</p>
                             <p className="text-gray-400 text-[10px] md:text-xs whitespace-nowrap font-medium line-through">{product.price}</p>
@@ -480,7 +649,7 @@ export default function App() {
                 );
               }) : (
                 <div className="w-full text-center py-20 text-[#3C101B]/50 font-serif italic text-lg">
-                  No products found in this category.
+                  {t.emptyProducts}
                 </div>
               )}
             </div>
@@ -505,9 +674,9 @@ export default function App() {
       <section id="about" className="bg-[#3C101B] text-white py-24">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center gap-16">
           <div className="flex-1 text-center md:text-left">
-             <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-4 block font-medium">Visit the Gallery</span>
+             <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-4 block font-medium">{t.gallery.tag}</span>
              <h2 className="font-serif text-3xl md:text-4xl italic mb-6 leading-tight">
-               Experience the legacy of Shivgouri.
+               {t.gallery.title}
              </h2>
              <p className="text-white/70 text-sm md:text-base leading-relaxed mb-10 max-w-md mx-auto md:mx-0">
                {t.about.desc}
@@ -524,6 +693,42 @@ export default function App() {
       </section>
 
       {/* Footer */}
+      {/* Trust Features */}
+      <section className="py-16 bg-[#F3EFE8] border-t border-[#3C101B]/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full border border-[#A28B55] flex items-center justify-center text-[#A28B55] mb-4">
+                <ShieldCheck size={24} strokeWidth={1.5} />
+              </div>
+              <h4 className="font-serif text-lg text-[#3C101B] mb-2">Authenticity Guarantee</h4>
+              <p className="text-xs text-[#3C101B]/60 max-w-[150px]">100% genuine handloom products sourced directly from weavers.</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full border border-[#A28B55] flex items-center justify-center text-[#A28B55] mb-4">
+                <RefreshCcw size={24} strokeWidth={1.5} />
+              </div>
+              <h4 className="font-serif text-lg text-[#3C101B] mb-2">Easy Returns</h4>
+              <p className="text-xs text-[#3C101B]/60 max-w-[150px]">Hassle-free 7-day return and exchange policy on all purchases.</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full border border-[#A28B55] flex items-center justify-center text-[#A28B55] mb-4">
+                <Truck size={24} strokeWidth={1.5} />
+              </div>
+              <h4 className="font-serif text-lg text-[#3C101B] mb-2">Express Shipping</h4>
+              <p className="text-xs text-[#3C101B]/60 max-w-[150px]">Free shipping pan-India with real-time order tracking.</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full border border-[#A28B55] flex items-center justify-center text-[#A28B55] mb-4">
+                <Lock size={24} strokeWidth={1.5} />
+              </div>
+              <h4 className="font-serif text-lg text-[#3C101B] mb-2">Secure Payments</h4>
+              <p className="text-xs text-[#3C101B]/60 max-w-[150px]">SSL-encrypted transactions with UPI, Cards, and COD options.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <footer id="contact" className="bg-[#2A0B13] text-white pt-24 pb-12 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 text-center">
            <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-white/80">Register Address</h4>
@@ -534,10 +739,49 @@ export default function App() {
 
            <div className="w-full h-px bg-white/10 my-16 max-w-4xl mx-auto" />
 
-           <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-[#A28B55]">Subscribe to our emails</h4>
-           <h2 className="font-serif text-3xl md:text-4xl italic mb-6">Join Our Journey</h2>
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto text-left mb-16">
+             <div>
+               <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-[#A28B55]">Shop</h4>
+               <ul className="space-y-3 text-[11px] uppercase tracking-widest text-white/50">
+                 <li><a href="#" className="hover:text-white transition-colors">Silk Sarees</a></li>
+                 <li><a href="#" className="hover:text-white transition-colors">Cotton Sarees</a></li>
+                 <li><a href="#" className="hover:text-white transition-colors">Bridal Collection</a></li>
+                 <li><a href="#" className="hover:text-white transition-colors">New Arrivals</a></li>
+               </ul>
+             </div>
+             <div>
+               <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-[#A28B55]">Company</h4>
+               <ul className="space-y-3 text-[11px] uppercase tracking-widest text-white/50">
+                 <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
+                 <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
+                 <li><a href="#" className="hover:text-white transition-colors">Our Weavers</a></li>
+                 <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+               </ul>
+             </div>
+             <div>
+               <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-[#A28B55]">Support</h4>
+               <ul className="space-y-3 text-[11px] uppercase tracking-widest text-white/50">
+                 <li><a href="#" className="hover:text-white transition-colors">Order Tracking</a></li>
+                 <li><a href="#" className="hover:text-white transition-colors">Shipping Policy</a></li>
+                 <li><a href="#" className="hover:text-white transition-colors">Return & Refund</a></li>
+                 <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
+               </ul>
+             </div>
+             <div>
+               <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-[#A28B55]">Legal</h4>
+               <ul className="space-y-3 text-[11px] uppercase tracking-widest text-white/50">
+                 <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                 <li><a href="#" className="hover:text-white transition-colors">Terms & Conditions</a></li>
+               </ul>
+             </div>
+           </div>
+
+           <div className="w-full h-px bg-white/10 my-16 max-w-4xl mx-auto" />
+
+           <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-[#A28B55]">{t.newsletter.tag}</h4>
+           <h2 className="font-serif text-3xl md:text-4xl italic mb-6">{t.newsletter.title}</h2>
            <p className="text-sm text-white/60 mb-10 max-w-md mx-auto">
-             Be the first to explore special offers, exclusive discounts, and all our latest updates.
+             {t.newsletter.desc}
            </p>
 
            <div className="flex flex-col sm:flex-row max-w-md mx-auto gap-4 mb-24">
@@ -547,7 +791,7 @@ export default function App() {
                className="flex-1 bg-white text-[#3C101B] px-6 py-4 rounded-sm focus:outline-none placeholder:text-[#3C101B]/40 text-sm" 
              />
              <button className="bg-[#F7F4EF] text-[#3C101B] px-8 py-4 rounded-sm text-[11px] font-bold uppercase tracking-widest hover:bg-white transition-colors">
-               Subscribe
+               {t.newsletter.btn}
              </button>
            </div>
 
@@ -582,8 +826,8 @@ export default function App() {
                 const url = `${window.location.origin}?product=${selectedProduct.id}`;
                 if (navigator.share) {
                   navigator.share({
-                    title: selectedProduct[lang].name,
-                    text: `Check out ${selectedProduct[lang].name} at Shivgouri`,
+                    title: (selectedProduct[lang] || selectedProduct.en).name,
+                    text: `Check out ${(selectedProduct[lang] || selectedProduct.en).name} at Shivgouri`,
                     url: url
                   }).catch(console.error);
                 } else {
@@ -606,7 +850,7 @@ export default function App() {
             <div className="w-full md:w-[55%] lg:w-3/5 bg-[#EAE5DB] relative h-[50vh] md:h-full">
               <div className="relative w-full h-full">
                 {selectedProduct.image ? (
-                  <img referrerPolicy="no-referrer" src={selectedProduct.image} alt={selectedProduct[lang].name} className="w-full h-full object-cover" />
+                  <img referrerPolicy="no-referrer" src={selectedProduct.image} alt={(selectedProduct[lang] || selectedProduct.en).name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[#3C101B]/20">
                     <ImageIcon size={64} strokeWidth={1} />
@@ -618,15 +862,18 @@ export default function App() {
             {/* Scrollable Details Area */}
             <div className="w-full md:w-[45%] lg:w-2/5 p-6 md:p-10 lg:p-14 flex flex-col h-[50vh] md:h-full overflow-y-auto bg-[#FAFAFA]">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-[10px] uppercase tracking-widest text-[#A28B55] block">{selectedProduct[lang].badge} {selectedProduct[lang].subcategory ? `/ ${selectedProduct[lang].subcategory}` : ''}</span>
-                {selectedProduct.inOffer && (
+                <span className="text-[10px] uppercase tracking-widest text-[#A28B55] block">{(selectedProduct[lang] || selectedProduct.en).badge} {(selectedProduct[lang] || selectedProduct.en).subcategory ? `/ ${(selectedProduct[lang] || selectedProduct.en).subcategory}` : ''}</span>
+                {(selectedProduct.inOffer || selectedProduct.isDailyOffer) && (
                   <span className="bg-[#8B1C31] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">{selectedProduct.discountRate || 'Offer'}</span>
                 )}
+                {selectedProduct.stock !== undefined && selectedProduct.stock > 0 && selectedProduct.stock < 5 && (
+                  <span className="bg-orange-500 text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">Low Stock</span>
+                )}
               </div>
-              <h2 className="font-serif text-3xl md:text-4xl text-[#3C101B] mb-3 leading-tight">{selectedProduct[lang].name}</h2>
+              <h2 className="font-serif text-3xl md:text-4xl text-[#3C101B] mb-3 leading-tight">{(selectedProduct[lang] || selectedProduct.en).name}</h2>
               
               <div className="flex items-end gap-4 mb-8">
-                {selectedProduct.inOffer && selectedProduct.offerPrice ? (
+                {(selectedProduct.inOffer || selectedProduct.isDailyOffer) && selectedProduct.offerPrice ? (
                   <>
                     <p className="text-3xl font-bold text-[#8B1C31]">{selectedProduct.offerPrice}</p>
                     <p className="text-lg font-medium text-gray-400 line-through pb-0.5">{selectedProduct.price}</p>
@@ -654,11 +901,11 @@ export default function App() {
                 </div>
               )}
               
-              {selectedProduct[lang].description && (
+              {(selectedProduct[lang] || selectedProduct.en).description && (
                 <div className="mb-8">
                   <h4 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-4 border-b border-[#3C101B]/10 pb-2">Description</h4>
                   <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
-                    {selectedProduct[lang].description}
+                    {(selectedProduct[lang] || selectedProduct.en).description}
                   </p>
                 </div>
               )}
@@ -675,6 +922,22 @@ export default function App() {
                       >
                         {c}
                       </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedProduct.specifications && selectedProduct.specifications.length > 0 && (
+                <div className="mb-8 bg-[#F7F4EF] p-6 rounded-lg border border-[#3C101B]/5">
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#3C101B] mb-6 border-b border-[#3C101B]/10 pb-4 flex items-center gap-2">
+                    Product Specifications
+                  </h4>
+                  <div className="flex flex-col">
+                    {selectedProduct.specifications.map((spec, i) => (
+                      <div key={i} className={`flex py-3 ${i !== selectedProduct.specifications!.length - 1 ? 'border-b border-[#3C101B]/5' : ''}`}>
+                        <span className="w-1/3 text-sm text-[#3C101B]/60 font-medium">{spec.key}</span>
+                        <span className="w-2/3 text-sm text-[#3C101B] font-bold">{spec.value}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -715,7 +978,7 @@ export default function App() {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />
           <div className="relative w-full max-w-md bg-[#F7F4EF] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             <div className="flex items-center justify-between p-6 border-b border-[#3C101B]/10">
-              <h2 className="font-serif text-2xl text-[#3C101B] italic">Your Cart</h2>
+              <h2 className="font-serif text-2xl text-[#3C101B] italic">{t.cart.title}</h2>
               <button onClick={() => setIsCartOpen(false)} className="text-[#3C101B] hover:opacity-50">
                 <X size={24} strokeWidth={1.5} />
               </button>
@@ -725,7 +988,7 @@ export default function App() {
               {cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
                   <ShoppingBag size={48} strokeWidth={1} className="mb-4" />
-                  <p className="font-serif text-lg">Your cart is empty.</p>
+                  <p className="font-serif text-lg">{t.cart.empty}</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-6">
@@ -735,7 +998,7 @@ export default function App() {
                         {item.product.image ? <img referrerPolicy="no-referrer" src={item.product.image} className="w-full h-full object-cover" /> : null}
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-[12px] font-medium text-[#3C101B] mb-1 leading-snug">{item.product[lang].name}</h4>
+                        <h4 className="text-[12px] font-medium text-[#3C101B] mb-1 leading-snug">{(item.product[lang] || item.product.en).name}</h4>
                         {item.selectedColor && (
                           <p className="text-[10px] text-[#3C101B]/70 mb-1 uppercase tracking-widest">Color: {item.selectedColor}</p>
                         )}
@@ -771,37 +1034,75 @@ export default function App() {
             {cart.length > 0 && (
               <div className="p-6 border-t border-[#3C101B]/10 bg-[#EAE5DB]/50">
                  <button 
-                   onClick={async () => {
-                     const orderText = cart.map(item => {
-                       const colorStr = item.selectedColor ? ` - Color: ${item.selectedColor}` : '';
-                       const price = item.product.inOffer && item.product.offerPrice ? item.product.offerPrice : item.product.price;
-                       return `${item.quantity}x ${item.product[lang].name}${colorStr} (${price})`;
-                     }).join('\\n');
-                     const message = `Hello Shivgouri, I would like to order:\\n\\n${orderText}`;
-                     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
-                     window.open(waLink, '_blank');
-                     
-                     try {
-                       const { saveProduct } = await import('./firebase');
-                       for (const item of cart) {
-                         if (item.product.stock !== undefined && item.product.id) {
-                           const newStock = Math.max(0, item.product.stock - item.quantity);
-                           await saveProduct({ ...item.product, stock: newStock });
-                           setProducts(prev => prev.map(p => p.id === item.product.id ? { ...p, stock: newStock } : p));
-                         }
-                       }
-                       setCart([]);
-                       setIsCartOpen(false);
-                     } catch (e) {
-                       console.error('Failed to update stock:', e);
-                     }
-                   }}
+                   onClick={() => setShowCheckoutWarning(true)}
                    className="w-full bg-[#3C101B] text-white py-4 text-[11px] uppercase tracking-widest font-bold hover:bg-[#2A0B13] transition-colors"
                  >
-                   Checkout via WhatsApp
+                   {t.cart.checkout}
                  </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Checkout Warning Popup */}
+      {showCheckoutWarning && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCheckoutWarning(false)}></div>
+          <div className="relative bg-[#FAFAFA] w-full max-w-md rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <button 
+              onClick={() => setShowCheckoutWarning(false)}
+              className="absolute right-4 top-4 z-10 w-8 h-8 flex items-center justify-center bg-[#EAE5DB] rounded-full text-[#3C101B] hover:bg-[#3C101B] hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <div className="p-8 max-h-[90vh] overflow-y-auto">
+              <h2 className="font-serif text-2xl text-[#3C101B] mb-6 italic border-b border-[#3C101B]/10 pb-4">
+                {content.en.checkout.title} / {content.hi.checkout.title}
+                {lang === 'kn' && ` / ${content.kn.checkout.title}`}
+              </h2>
+              
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start gap-3">
+                  <span className="text-[#8B1C31] mt-1">✦</span>
+                  <div className="text-sm text-gray-700 font-medium space-y-1">
+                    <p>{content.en.checkout.rule1}</p>
+                    <p className="text-gray-500">{content.hi.checkout.rule1}</p>
+                    {lang === 'kn' && <p className="text-gray-500">{content.kn.checkout.rule1}</p>}
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#8B1C31] mt-1">✦</span>
+                  <div className="text-sm text-gray-700 font-medium space-y-1">
+                    <p>{content.en.checkout.rule2[0]}<span className="text-[#8B1C31] font-bold">{content.en.checkout.rule2[1]}</span>{content.en.checkout.rule2[2]}</p>
+                    <p className="text-gray-500">{content.hi.checkout.rule2[0]}<span className="text-[#8B1C31] font-bold">{content.hi.checkout.rule2[1]}</span>{content.hi.checkout.rule2[2]}</p>
+                    {lang === 'kn' && <p className="text-gray-500">{content.kn.checkout.rule2[0]}<span className="text-[#8B1C31] font-bold">{content.kn.checkout.rule2[1]}</span>{content.kn.checkout.rule2[2]}</p>}
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#8B1C31] mt-1">✦</span>
+                  <div className="text-sm text-gray-700 font-medium space-y-1">
+                    <p>{content.en.checkout.rule3}</p>
+                    <p className="text-gray-500">{content.hi.checkout.rule3}</p>
+                    {lang === 'kn' && <p className="text-gray-500">{content.kn.checkout.rule3}</p>}
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#8B1C31] mt-1">✦</span>
+                  <div className="text-sm text-gray-700 font-medium space-y-1">
+                    <p>{content.en.checkout.rule4}</p>
+                    <p className="text-gray-500">{content.hi.checkout.rule4}</p>
+                    {lang === 'kn' && <p className="text-gray-500">{content.kn.checkout.rule4}</p>}
+                  </div>
+                </li>
+              </ul>
+
+              <button 
+                onClick={handleCheckout}
+                className="w-full bg-[#3C101B] text-white py-4 text-[12px] font-bold tracking-[0.1em] uppercase hover:bg-black transition-colors rounded-md shadow-lg"
+              >
+                {t.checkout.btn}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -823,14 +1124,14 @@ export default function App() {
             )}
             <div className="p-8 text-center">
               <span className="text-[10px] uppercase tracking-widest text-[#A28B55] mb-2 block font-bold">Special Offer</span>
-              <h2 className="font-serif text-2xl md:text-3xl text-[#3C101B] mb-3 leading-tight">{offers.find(o => o.isActive)?.[lang].title}</h2>
-              <p className="text-gray-600 mb-6 text-sm">{offers.find(o => o.isActive)?.[lang].description}</p>
-              {offers.find(o => o.isActive)?.[lang].buttonText && (
+              <h2 className="font-serif text-2xl md:text-3xl text-[#3C101B] mb-3 leading-tight">{(offers.find(o => o.isActive)?.[lang] || offers.find(o => o.isActive)?.en)?.title}</h2>
+              <p className="text-gray-600 mb-6 text-sm">{(offers.find(o => o.isActive)?.[lang] || offers.find(o => o.isActive)?.en)?.description}</p>
+              {(offers.find(o => o.isActive)?.[lang] || offers.find(o => o.isActive)?.en)?.buttonText && (
                 <button 
                   onClick={() => setShowOffer(false)}
                   className="bg-[#3C101B] text-white px-8 py-3 text-[11px] font-bold tracking-[0.2em] uppercase hover:bg-black transition-colors"
                 >
-                  {offers.find(o => o.isActive)?.[lang].buttonText}
+                  {(offers.find(o => o.isActive)?.[lang] || offers.find(o => o.isActive)?.en)?.buttonText}
                 </button>
               )}
             </div>

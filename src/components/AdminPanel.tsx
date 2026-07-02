@@ -708,20 +708,34 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                 </div>
 
                 <div className="flex flex-col gap-3 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="checkbox" 
-                      id="productInOffer"
-                      checked={editing.inOffer || false} 
-                      onChange={e => setEditing({...editing, inOffer: e.target.checked})} 
-                      className="w-4 h-4 text-[#8B1C31] rounded border-gray-300 focus:ring-[#8B1C31]"
-                    />
-                    <label htmlFor="productInOffer" className="text-sm font-medium text-gray-700 cursor-pointer">
-                      Product is in Offer
-                    </label>
+                  <div className="flex gap-6">
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="checkbox" 
+                        id="productInOffer"
+                        checked={editing.inOffer || false} 
+                        onChange={e => setEditing({...editing, inOffer: e.target.checked})} 
+                        className="w-4 h-4 text-[#8B1C31] rounded border-gray-300 focus:ring-[#8B1C31]"
+                      />
+                      <label htmlFor="productInOffer" className="text-sm font-medium text-gray-700 cursor-pointer">
+                        Product is in Offer
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="checkbox" 
+                        id="productIsDailyOffer"
+                        checked={editing.isDailyOffer || false} 
+                        onChange={e => setEditing({...editing, isDailyOffer: e.target.checked})} 
+                        className="w-4 h-4 text-[#8B1C31] rounded border-gray-300 focus:ring-[#8B1C31]"
+                      />
+                      <label htmlFor="productIsDailyOffer" className="text-sm font-medium text-gray-700 cursor-pointer">
+                        Daily Offer
+                      </label>
+                    </div>
                   </div>
                   
-                  {editing.inOffer && (
+                  {(editing.inOffer || editing.isDailyOffer) && (
                     <div className="grid grid-cols-2 gap-4 mt-2">
                       <div>
                         <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Discount Rate</label>
@@ -743,6 +757,65 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                           placeholder="e.g. ₹999"
                         />
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 border border-gray-100 rounded-lg p-4 bg-gray-50/30">
+                  <div className="flex justify-between items-center mb-4">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product Specifications</label>
+                    <button 
+                      onClick={() => setEditing({
+                        ...editing, 
+                        specifications: [...(editing.specifications || []), { key: '', value: '' }]
+                      })}
+                      className="text-[#8B1C31] text-[10px] uppercase tracking-widest font-bold flex items-center gap-1 hover:text-[#6A1525]"
+                    >
+                      <Plus size={12} /> Add Field
+                    </button>
+                  </div>
+                  
+                  {editing.specifications && editing.specifications.length > 0 ? (
+                    <div className="space-y-3">
+                      {editing.specifications.map((spec, index) => (
+                        <div key={index} className="flex gap-2 items-start">
+                          <input 
+                            type="text" 
+                            value={spec.key}
+                            onChange={(e) => {
+                              const newSpecs = [...(editing.specifications || [])];
+                              newSpecs[index].key = e.target.value;
+                              setEditing({...editing, specifications: newSpecs});
+                            }}
+                            placeholder="e.g. Fabric"
+                            className="flex-1 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]"
+                          />
+                          <input 
+                            type="text" 
+                            value={spec.value}
+                            onChange={(e) => {
+                              const newSpecs = [...(editing.specifications || [])];
+                              newSpecs[index].value = e.target.value;
+                              setEditing({...editing, specifications: newSpecs});
+                            }}
+                            placeholder="e.g. Kora"
+                            className="flex-1 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]"
+                          />
+                          <button 
+                            onClick={() => {
+                              const newSpecs = editing.specifications?.filter((_, i) => i !== index);
+                              setEditing({...editing, specifications: newSpecs});
+                            }}
+                            className="p-2 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-xs text-gray-400 font-medium">
+                      No specifications added yet. Add details like Fabric, Wash & Care, etc.
                     </div>
                   )}
                 </div>
@@ -882,14 +955,16 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
             <div>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <p className="text-sm text-gray-500 max-w-md leading-relaxed">
-                  Manage your entire product catalog here. Changes are saved locally on this device.
+                  Manage your entire product catalog here. Changes are saved to your Firestore database.
                 </p>
-                <button 
-                  onClick={handleAdd} 
-                  className="bg-[#1a1a1a] text-white px-5 py-3 rounded-md text-[10px] font-medium tracking-widest uppercase hover:bg-black transition-colors flex items-center gap-2 flex-shrink-0"
-                >
-                  <Plus size={16} /> Add Product
-                </button>
+                <div className="flex gap-2 flex-wrap">
+                  <button 
+                    onClick={handleAdd} 
+                    className="bg-[#1a1a1a] text-white px-5 py-3 rounded-md text-[10px] font-medium tracking-widest uppercase hover:bg-black transition-colors flex items-center gap-2 flex-shrink-0"
+                  >
+                    <Plus size={16} /> Add Product
+                  </button>
+                </div>
               </div>
               
               <div className="grid gap-3">
