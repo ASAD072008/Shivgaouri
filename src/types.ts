@@ -35,3 +35,27 @@ export type Product = {
   stock?: number;
   specifications?: { key: string; value: string }[];
 };
+
+export type Order = {
+  id?: string;
+  customerDetails: {
+    mobileNumber: string;
+    alternateNumber?: string;
+    address: string;
+    landmark?: string;
+    city: string;
+    district: string;
+    pincode: string;
+    name?: string;
+  };
+  products: {
+    productId: number;
+    name: string;
+    price: string;
+    quantity: number;
+    color?: string;
+  }[];
+  totalAmount: number;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  createdAt: number; // timestamp
+};

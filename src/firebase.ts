@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { initializeFirestore, collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { Product, Category, Offer } from './types';
+import { Product, Category, Offer, Order } from './types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDUco6pzduuuNw7ClLxYNtnSAC8rhZBtpE",
@@ -13,9 +13,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true
-}, 'ai-studio-shivgouri-7a968f7b-82ef-4878-874e-59efd0ee8136');
+export const db = getFirestore(app, 'ai-studio-shivgouri-7a968f7b-82ef-4878-874e-59efd0ee8136');
 export const auth = getAuth(app);
 
 export enum OperationType {
@@ -164,6 +162,45 @@ export async function deleteOffer(id: string): Promise<void> {
   const path = `offers/${id}`;
   try {
     const docRef = doc(db, 'offers', id);
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function fetchOrders(): Promise<Order[]> {
+  const path = 'orders';
+  try {
+    const querySnapshot = await getDocs(collection(db, path));
+    const list: Order[] = [];
+    querySnapshot.forEach((doc) => {
+      list.push(doc.data() as Order);
+    });
+    return list.sort((a, b) => b.createdAt - a.createdAt);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+    return [];
+  }
+}
+
+export async function saveOrder(order: Order): Promise<void> {
+  // If no ID is provided, create a new one based on timestamp
+  if (!order.id) {
+    order.id = `ORD-${Date.now()}`;
+  }
+  const path = `orders/${order.id}`;
+  try {
+    const docRef = doc(db, 'orders', order.id);
+    await setDoc(docRef, order);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteOrder(id: string): Promise<void> {
+  const path = `orders/${id}`;
+  try {
+    const docRef = doc(db, 'orders', id);
     await deleteDoc(docRef);
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);

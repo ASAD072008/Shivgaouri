@@ -10,9 +10,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck } from 'lucide-react';
-import { Product, Offer } from './types';
+import { Product, Offer, Order } from './types';
 import AdminPanel from './components/AdminPanel';
-import { fetchProducts, fetchCategories, fetchOffers, saveProduct, saveCategory, saveOffer } from './firebase';
+import { fetchProducts, fetchCategories, fetchOffers, saveProduct, saveCategory, saveOffer, saveOrder } from './firebase';
 
 const content = {
   en: {
@@ -82,6 +82,8 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [showCheckoutWarning, setShowCheckoutWarning] = useState(false);
+  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [customerDetails, setCustomerDetails] = useState({ name: '', mobileNumber: '', alternateNumber: '', address: '', landmark: '', city: '', district: '', pincode: '' });
 
   useEffect(() => {
     async function loadData() {
@@ -118,30 +120,147 @@ export default function App() {
   const waNumber = '918329732432';
   const t = content[lang];
 
-  const handleCheckout = async () => {
-    const orderText = cart.map(item => {
-      const colorStr = item.selectedColor ? ` - Color: ${item.selectedColor}` : '';
+  const handleCheckout = () => {
+    setShowCheckoutWarning(false);
+    setShowCheckoutForm(true);
+  };
+
+  const submitOrder = async () => {
+    if (!customerDetails.name || !customerDetails.mobileNumber || !customerDetails.address || !customerDetails.city || !customerDetails.district || !customerDetails.pincode) {
+      alert("Please fill all mandatory fields (Name, Mobile, Address, City, District, Pincode).");
+      return;
+    }
+
+    const totalAmount = cart.reduce((total, item) => {
       const price = (item.product.inOffer || item.product.isDailyOffer) && item.product.offerPrice ? item.product.offerPrice : item.product.price;
-      return `${item.quantity}x ${(item.product[lang] || item.product.en).name}${colorStr} (${price})`;
-    }).join('\n');
-    const message = `Hello Shivgouri, I would like to order:\n\n${orderText}`;
-    const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
-    window.open(waLink, '_blank');
-    
+      const parsedPrice = parseInt(String(price).replace(/\D/g, ''), 10) || 0;
+      return total + (parsedPrice * item.quantity);
+    }, 0);
+
     try {
-      const { saveProduct } = await import('./firebase');
-      for (const item of cart) {
-        if (item.product.stock !== undefined && item.product.id) {
-          const newStock = Math.max(0, item.product.stock - item.quantity);
-          await saveProduct({ ...item.product, stock: newStock });
-          setProducts(prev => prev.map(p => p.id === item.product.id ? { ...p, stock: newStock } : p));
-        }
+      // 1. Create order on the backend
+      const response = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: totalAmount * 100 }) // amount in paise
+      });
+
+      if (!response.ok) {
+        let errMsg = 'Failed to create order';
+        try {
+          const errData = await response.json();
+          errMsg = errData.error || errMsg;
+        } catch(e) {}
+        throw new Error(errMsg);
       }
-      setCart([]);
-      setIsCartOpen(false);
-      setShowCheckoutWarning(false);
-    } catch (e) {
-      console.error('Failed to update stock:', e);
+
+      const orderResponse = await response.json();
+
+      // 2. Open Razorpay checkout
+      const options = {
+        key: orderResponse.razorpay_key_id,
+        amount: orderResponse.amount,
+        currency: orderResponse.currency,
+        name: "Shivgouri",
+        description: "Payment for order",
+        order_id: orderResponse.id,
+        config: {
+          display: {
+            blocks: {
+              upi_id: {
+                name: "Pay via UPI ID",
+                instruments: [
+                  {
+                    method: "upi",
+                    flows: ["collect"]
+                  }
+                ]
+              },
+              other: {
+                name: "Other Payment Modes",
+                instruments: [
+                  { method: "upi", flows: ["qr", "intent"] },
+                  { method: "card" },
+                  { method: "netbanking" },
+                  { method: "wallet" }
+                ]
+              }
+            },
+            sequence: ["block.upi_id", "block.other"],
+            preferences: {
+              show_default_blocks: false
+            }
+          }
+        },
+        handler: async function (response: any) {
+          // 3. Verify payment signature on the backend
+          const verifyResponse = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            })
+          });
+
+          if (!verifyResponse.ok) {
+            alert('Payment verification failed.');
+            return;
+          }
+
+          // Payment verified successfully! Save order details
+          const orderData: Order = {
+            customerDetails,
+            products: cart.map(item => ({
+              productId: item.product.id,
+              name: (item.product.en).name,
+              price: (item.product.inOffer || item.product.isDailyOffer) && item.product.offerPrice ? item.product.offerPrice : item.product.price,
+              quantity: item.quantity,
+              color: item.selectedColor
+            })),
+            totalAmount,
+            status: 'pending',
+            createdAt: Date.now()
+          };
+
+          await saveOrder(orderData);
+
+          // Reduce stock
+          const { saveProduct } = await import('./firebase');
+          for (const item of cart) {
+            if (item.product.stock !== undefined && item.product.id) {
+              const newStock = Math.max(0, item.product.stock - item.quantity);
+              await saveProduct({ ...item.product, stock: newStock });
+              setProducts(prev => prev.map(p => p.id === item.product.id ? { ...p, stock: newStock } : p));
+            }
+          }
+
+          setCart([]);
+          setCustomerDetails({ name: '', mobileNumber: '', alternateNumber: '', address: '', landmark: '', city: '', district: '', pincode: '' });
+          setShowCheckoutForm(false);
+          setIsCartOpen(false);
+          alert('Order placed successfully!');
+        },
+        prefill: {
+          name: customerDetails.name,
+          contact: customerDetails.mobileNumber,
+        },
+        theme: {
+          color: "#8B1C31"
+        }
+      };
+
+      // @ts-ignore
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+        alert(`Payment failed: ${response.error.description}`);
+      });
+      rzp.open();
+
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || 'Error initiating checkout, please try again.');
     }
   };
 
@@ -1106,7 +1225,73 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Checkout Form Popup */}
+      {showCheckoutForm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCheckoutForm(false)}></div>
+          <div className="relative bg-[#FAFAFA] w-full max-w-md rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <button 
+              onClick={() => setShowCheckoutForm(false)}
+              className="absolute right-4 top-4 z-10 w-8 h-8 flex items-center justify-center bg-[#EAE5DB] rounded-full text-[#3C101B] hover:bg-[#3C101B] hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <div className="p-8 max-h-[90vh] overflow-y-auto">
+              <h2 className="font-serif text-2xl text-[#3C101B] mb-6 italic border-b border-[#3C101B]/10 pb-4">
+                Delivery Details
+              </h2>
+              
+              <div className="space-y-4 mb-8">
+                <div>
+                  <label className="block text-xs font-bold text-[#3C101B]/70 uppercase tracking-widest mb-2">Name *</label>
+                  <input type="text" value={customerDetails.name} onChange={(e) => setCustomerDetails({...customerDetails, name: e.target.value})} className="w-full border border-gray-300 rounded px-4 py-3 text-sm focus:outline-none focus:border-[#3C101B]" placeholder="Enter your name" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#3C101B]/70 uppercase tracking-widest mb-2">Mobile Number *</label>
+                  <input type="tel" value={customerDetails.mobileNumber} onChange={(e) => setCustomerDetails({...customerDetails, mobileNumber: e.target.value})} className="w-full border border-gray-300 rounded px-4 py-3 text-sm focus:outline-none focus:border-[#3C101B]" placeholder="Enter mobile number" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#3C101B]/70 uppercase tracking-widest mb-2">Alternate Number</label>
+                  <input type="tel" value={customerDetails.alternateNumber} onChange={(e) => setCustomerDetails({...customerDetails, alternateNumber: e.target.value})} className="w-full border border-gray-300 rounded px-4 py-3 text-sm focus:outline-none focus:border-[#3C101B]" placeholder="Enter alternate number (optional)" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#3C101B]/70 uppercase tracking-widest mb-2">Address *</label>
+                  <textarea value={customerDetails.address} onChange={(e) => setCustomerDetails({...customerDetails, address: e.target.value})} className="w-full border border-gray-300 rounded px-4 py-3 text-sm focus:outline-none focus:border-[#3C101B] min-h-[100px]" placeholder="Enter full delivery address"></textarea>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#3C101B]/70 uppercase tracking-widest mb-2">Landmark</label>
+                  <input type="text" value={customerDetails.landmark} onChange={(e) => setCustomerDetails({...customerDetails, landmark: e.target.value})} className="w-full border border-gray-300 rounded px-4 py-3 text-sm focus:outline-none focus:border-[#3C101B]" placeholder="Enter landmark (optional)" />
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-1/2">
+                    <label className="block text-xs font-bold text-[#3C101B]/70 uppercase tracking-widest mb-2">City *</label>
+                    <input type="text" value={customerDetails.city} onChange={(e) => setCustomerDetails({...customerDetails, city: e.target.value})} className="w-full border border-gray-300 rounded px-4 py-3 text-sm focus:outline-none focus:border-[#3C101B]" placeholder="Enter city" />
+                  </div>
+                  <div className="w-1/2">
+                    <label className="block text-xs font-bold text-[#3C101B]/70 uppercase tracking-widest mb-2">District *</label>
+                    <input type="text" value={customerDetails.district} onChange={(e) => setCustomerDetails({...customerDetails, district: e.target.value})} className="w-full border border-gray-300 rounded px-4 py-3 text-sm focus:outline-none focus:border-[#3C101B]" placeholder="Enter district" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#3C101B]/70 uppercase tracking-widest mb-2">Pincode *</label>
+                  <input type="text" value={customerDetails.pincode} onChange={(e) => setCustomerDetails({...customerDetails, pincode: e.target.value})} className="w-full border border-gray-300 rounded px-4 py-3 text-sm focus:outline-none focus:border-[#3C101B]" placeholder="Enter pincode" />
+                </div>
+              </div>
+
+              <button 
+                onClick={submitOrder}
+                className="w-full bg-[#3C101B] text-white py-4 text-[12px] font-bold tracking-[0.1em] uppercase hover:bg-black transition-colors rounded-md shadow-lg"
+              >
+                Pay & Place Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Offer Popup */}
+
       {showOffer && offers.filter(o => o.isActive).length > 0 && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowOffer(false)}></div>

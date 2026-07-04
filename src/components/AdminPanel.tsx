@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, Layers, Box } from 'lucide-react';
-import { Product, Category, Offer } from '../types';
-import { saveProduct, deleteProduct, saveCategory, deleteCategory, saveOffer, deleteOffer } from '../firebase';
+import { Product, Category, Offer, Order } from '../types';
+import { saveProduct, deleteProduct, saveCategory, deleteCategory, saveOffer, deleteOffer, fetchOrders, saveOrder, deleteOrder } from '../firebase';
 
 interface Props {
   products: Product[];
@@ -14,13 +14,29 @@ interface Props {
 }
 
 export default function AdminPanel({ products, setProducts, categories, setCategories, offers, setOffers, onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'offers'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'offers' | 'orders'>('products');
   const [editing, setEditing] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<string | null>(null);
   const [deleteOfferConfirm, setDeleteOfferConfirm] = useState<string | null>(null);
+  const [deleteOrderConfirm, setDeleteOrderConfirm] = useState<string | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
+  React.useEffect(() => {
+    if (activeTab === 'orders') {
+      const loadOrders = async () => {
+        setLoadingOrders(true);
+        const fetchedOrders = await fetchOrders();
+        setOrders(fetchedOrders);
+        setLoadingOrders(false);
+      };
+      loadOrders();
+    }
+  }, [activeTab]);
+
 
   const handleSave = async () => {
     if (!editing) return;
@@ -298,6 +314,14 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                   }`}
                 >
                   <ImageIcon size={14} /> Offers
+                </button>
+                <button
+                  onClick={() => setActiveTab('orders')}
+                  className={`whitespace-nowrap flex-shrink-0 px-4 py-1.5 text-xs font-medium tracking-widest uppercase rounded-md transition-colors flex items-center gap-2 ${
+                    activeTab === 'orders' ? 'bg-[#8B1C31] text-white' : 'text-gray-500 hover:text-[#1a1a1a]'
+                  }`}
+                >
+                  <Box size={14} /> Orders
                 </button>
               </div>
             )}
@@ -1157,6 +1181,128 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                   </div>
                 )}
               </div>
+            </div>
+          ) : activeTab === 'orders' ? (
+            <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <p className="text-sm text-gray-500 max-w-md leading-relaxed">
+                  Manage your customer orders. Orders are generated from WhatsApp checkout.
+                </p>
+              </div>
+
+              {loadingOrders ? (
+                <div className="text-center py-16 text-gray-400">Loading orders...</div>
+              ) : (
+                <div className="space-y-4">
+                  {orders.map(order => (
+                    <div key={order.id} className="bg-white border border-gray-100 p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-4 pb-4 border-b border-gray-100">
+                        <div>
+                          <p className="text-xs font-bold text-gray-400 mb-1">Order #{order.id}</p>
+                          <p className="text-sm text-gray-900">{new Date(order.createdAt).toLocaleString()}</p>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="text-[#8B1C31] font-serif font-bold text-lg">₹{order.totalAmount.toLocaleString('en-IN')}</span>
+                          <span className={`text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-sm mt-2
+                            ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                              order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                              order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                              'bg-red-100 text-red-800'}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Customer Details</h4>
+                          <div className="space-y-1 text-sm text-gray-700">
+                            <p><span className="font-semibold">Name:</span> {order.customerDetails.name}</p>
+                            <p><span className="font-semibold">Mobile:</span> {order.customerDetails.mobileNumber}</p>
+                            {order.customerDetails.alternateNumber && <p><span className="font-semibold">Alt:</span> {order.customerDetails.alternateNumber}</p>}
+                            <p><span className="font-semibold">Address:</span> {order.customerDetails.address}</p>
+                            {order.customerDetails.landmark && <p><span className="font-semibold">Landmark:</span> {order.customerDetails.landmark}</p>}
+                            <p><span className="font-semibold">City:</span> {order.customerDetails.city}</p>
+                            <p><span className="font-semibold">District:</span> {order.customerDetails.district}</p>
+                            <p><span className="font-semibold">Pincode:</span> {order.customerDetails.pincode}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Order Items</h4>
+                          <div className="space-y-2">
+                            {order.products.map((item, i) => (
+                              <div key={i} className="flex justify-between text-sm">
+                                <span className="text-gray-700">
+                                  {item.quantity}x {item.name} {item.color ? `(${item.color})` : ''}
+                                </span>
+                                <span className="font-semibold text-gray-900">₹{item.price}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 justify-end pt-4 border-t border-gray-100 items-center">
+                        {deleteOrderConfirm === order.id ? (
+                          <div className="flex items-center gap-2 mr-auto">
+                            <span className="text-xs text-red-600 font-medium">Delete?</span>
+                            <button 
+                              onClick={async () => {
+                                if (order.id) {
+                                  await deleteOrder(order.id);
+                                  setOrders(orders.filter(o => o.id !== order.id));
+                                }
+                                setDeleteOrderConfirm(null);
+                              }}
+                              className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                            >
+                              Yes
+                            </button>
+                            <button 
+                              onClick={() => setDeleteOrderConfirm(null)}
+                              className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300 transition-colors"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => setDeleteOrderConfirm(order.id || null)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors mr-auto"
+                            title="Delete Order"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                        <select 
+                          className="border border-gray-200 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-[#8B1C31]"
+                          value={order.status}
+                          onChange={async (e) => {
+                            const newStatus = e.target.value as any;
+                            const updatedOrder = { ...order, status: newStatus };
+                            await saveOrder(updatedOrder);
+                            setOrders(orders.map(o => o.id === order.id ? updatedOrder : o));
+                          }}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="processing">Processing</option>
+                          <option value="shipped">Shipped</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                  {orders.length === 0 && (
+                    <div className="text-center py-16 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+                      <div className="flex justify-center mb-4"><Box size={48} className="opacity-20"/></div>
+                      <p className="text-sm font-medium">No orders yet</p>
+                      <p className="text-xs mt-1">Orders will appear here when customers checkout.</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : null}
         </div>
