@@ -40,6 +40,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
 
   const handleSave = async () => {
     if (!editing) return;
+    console.log("Saving product: ", editing.id);
     try {
       await saveProduct(editing);
       const exists = products.find(p => p.id === editing.id);
@@ -71,8 +72,16 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
       image: '',
       images: [],
       colors: [],
-      en: { name: '', badge: '', description: '' },
-      kn: { name: '', badge: '', description: '' }
+      en: { name: '', badge: '', description: '', subcategory: '' },
+      kn: { name: '', badge: '', description: '', subcategory: '' },
+      categoryId: '',
+      subcategoryId: '',
+      inOffer: false,
+      isDailyOffer: false,
+      discountRate: '',
+      offerPrice: '',
+      stock: 0,
+      specifications: []
     });
   };
 
@@ -723,7 +732,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <input 
                       type="number" 
                       value={editing.stock ?? ''}
-                      onChange={e => setEditing({...editing, stock: e.target.value ? parseInt(e.target.value) : undefined})}
+                      onChange={e => setEditing({...editing, stock: e.target.value ? parseInt(e.target.value) : 0})}
                       className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
                       placeholder="e.g. 10"
                       min="0"
@@ -856,9 +865,9 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                             setEditing({
                               ...editing,
                               categoryId: cat.id,
-                              subcategoryId: undefined, // Reset subcategory when category changes
-                              en: { ...editing.en, badge: cat.en, subcategory: undefined },
-                              kn: { ...editing.kn, badge: cat.kn, subcategory: undefined }
+                              subcategoryId: '', // Reset subcategory when category changes
+                              en: { ...editing.en, badge: cat.en, subcategory: '' },
+                              kn: { ...editing.kn, badge: cat.kn, subcategory: '' }
                             });
                           }
                         }}
@@ -891,9 +900,9 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                                   } else {
                                     setEditing({
                                       ...editing,
-                                      subcategoryId: undefined,
-                                      en: { ...editing.en, subcategory: undefined },
-                                      kn: { ...editing.kn, subcategory: undefined }
+                                      subcategoryId: '',
+                                      en: { ...editing.en, subcategory: '' },
+                                      kn: { ...editing.kn, subcategory: '' }
                                     });
                                   }
                                 }}

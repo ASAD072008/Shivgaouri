@@ -82,7 +82,8 @@ export async function saveProduct(product: Product): Promise<void> {
   const path = `products/${product.id}`;
   try {
     const docRef = doc(db, 'products', product.id.toString());
-    await setDoc(docRef, product);
+    const cleanProduct = JSON.parse(JSON.stringify(product));
+    await setDoc(docRef, cleanProduct);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -117,7 +118,8 @@ export async function saveCategory(category: Category): Promise<void> {
   const path = `categories/${category.id}`;
   try {
     const docRef = doc(db, 'categories', category.id);
-    await setDoc(docRef, category);
+    const cleanCategory = JSON.parse(JSON.stringify(category));
+    await setDoc(docRef, cleanCategory);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -152,7 +154,8 @@ export async function saveOffer(offer: Offer): Promise<void> {
   const path = `offers/${offer.id}`;
   try {
     const docRef = doc(db, 'offers', offer.id);
-    await setDoc(docRef, offer);
+    const cleanOffer = JSON.parse(JSON.stringify(offer));
+    await setDoc(docRef, cleanOffer);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -191,7 +194,8 @@ export async function saveOrder(order: Order): Promise<void> {
   const path = `orders/${order.id}`;
   try {
     const docRef = doc(db, 'orders', order.id);
-    await setDoc(docRef, order);
+    const cleanOrder = JSON.parse(JSON.stringify(order));
+    await setDoc(docRef, cleanOrder);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
