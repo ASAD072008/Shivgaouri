@@ -232,7 +232,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
       id: Date.now().toString(),
       en: '',
       kn: '',
-      section: 'Womens'
+      section: 'Saree'
     });
   };
 
@@ -525,12 +525,12 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div>
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Main Section</label>
                       <select
-                        value={editingCategory.section || 'Womens'}
+                        value={editingCategory.section || 'Saree'}
                         onChange={e => setEditingCategory({...editingCategory, section: e.target.value})}
                         className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
                       >
-                        <option value="Womens">Women's</option>
-                        <option value="Kids">Kids</option>
+                        <option value="Saree">Sarees</option>
+                        <option value="Kurti">Kurti</option>
                       </select>
                     </div>
                   </div>
@@ -1068,6 +1068,15 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <div>
                         <h4 className="font-medium text-[#1a1a1a] text-sm leading-tight mb-1">{c.en}</h4>
                         <p className="text-xs text-gray-500 font-medium tracking-wide">{c.kn}</p>
+                        {c.subcategories && c.subcategories.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {c.subcategories.map(sc => (
+                              <span key={sc.id} className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">
+                                {sc.en}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end">

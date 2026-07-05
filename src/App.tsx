@@ -67,7 +67,7 @@ type CartItem = { product: Product; quantity: number; selectedColor?: string };
 export default function App() {
   const [lang, setLang] = useState<'en' | 'kn' | 'hi'>('en');
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('Womens');
+  const [activeSection, setActiveSection] = useState<string>('Saree');
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
@@ -299,17 +299,17 @@ export default function App() {
           en: badge,
           kn: prod?.kn.badge || badge,
           image: prod?.image || prod?.images?.[0] || '',
-          section: 'Womens'
+          section: 'Saree'
         };
       });
 
   const filteredCategories = categories.length > 0 
-    ? categories.filter(c => (c.section || 'Womens') === activeSection)
+    ? categories.filter(c => (c.section || 'Saree') === activeSection)
     : heroCategories.filter(c => c.section === activeSection);
   
   const filteredProducts = products.filter(p => {
     const pCat = categories.find(c => c.en === p.en.badge);
-    const pSection = pCat?.section || 'Womens';
+    const pSection = pCat?.section || 'Saree';
     
     const matchesSection = pSection === activeSection;
     const matchesCategory = activeCategory === 'All' || p.en.badge === activeCategory;
@@ -621,16 +621,16 @@ export default function App() {
           {/* Section Tabs */}
           <div className="flex gap-8 border-b border-[#3C101B]/10 pb-4 mb-4">
              <button 
-               onClick={() => { setActiveSection('Womens'); setActiveCategory('All'); }}
-               className={`whitespace-nowrap transition-colors text-lg font-serif ${activeSection === 'Womens' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
+               onClick={() => { setActiveSection('Saree'); setActiveCategory('All'); }}
+               className={`whitespace-nowrap transition-colors text-lg font-serif ${activeSection === 'Saree' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
              >
-               Women's
+               Sarees
              </button>
              <button 
-               onClick={() => { setActiveSection('Kids'); setActiveCategory('All'); }}
-               className={`whitespace-nowrap transition-colors text-lg font-serif ${activeSection === 'Kids' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
+               onClick={() => { setActiveSection('Kurti'); setActiveCategory('All'); }}
+               className={`whitespace-nowrap transition-colors text-lg font-serif ${activeSection === 'Kurti' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
              >
-               Kids
+               Kurti
              </button>
           </div>
 
