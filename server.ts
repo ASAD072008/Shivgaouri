@@ -11,24 +11,17 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Check if Razorpay keys exist
-  let razorpay: Razorpay | null = null;
-  const key_id = process.env.RAZORPAY_KEY_ID;
-  const key_secret = process.env.RAZORPAY_KEY_SECRET;
-  
-  if (key_id && key_secret) {
-    razorpay = new Razorpay({
-      key_id: key_id,
-      key_secret: key_secret,
-    });
-  }
+  // Keys will be fetched dynamically per request
 
   // API Routes
   app.post('/api/create-order', async (req, res) => {
     try {
-      if (!razorpay) {
-        return res.status(500).json({ error: 'Razorpay keys not configured' });
+      const key_id = process.env.RAZORPAY_KEY_ID?.trim();
+      const key_secret = process.env.RAZORPAY_KEY_SECRET?.trim();
+      if (!key_id || !key_secret) {
+        return res.status(500).json({ error: 'Razorpay keys not configured in environment variables' });
       }
+      const razorpay = new Razorpay({ key_id, key_secret });
       const { amount, currency, receipt } = req.body;
       if (!amount || amount < 100) {
         return res.status(400).json({ error: 'Invalid amount (minimum 100 paise required)' });
@@ -61,6 +54,7 @@ async function startServer() {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
+      const key_secret = process.env.RAZORPAY_KEY_SECRET?.trim();
       if (!key_secret) {
         return res.status(500).json({ error: 'Razorpay keys not configured' });
       }

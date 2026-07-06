@@ -12,6 +12,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck } from 'lucide-react';
 import { Product, Offer, Order } from './types';
 import AdminPanel from './components/AdminPanel';
+import LoginModal from './components/LoginModal';
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { fetchProducts, fetchCategories, fetchOffers, saveProduct, saveCategory, saveOffer, saveOrder } from './firebase';
 
 const content = {
@@ -82,6 +85,24 @@ const formatPrice = (p: string | undefined) => {
 export default function App() {
   const [lang, setLang] = useState<'en' | 'kn' | 'hi'>('en');
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [user, setUser] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        const mockUser = localStorage.getItem('mock_user');
+        if (mockUser) {
+          setUser(JSON.parse(mockUser));
+        } else {
+          setUser(null);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
   const [activeSection, setActiveSection] = useState<string>('Saree');
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('All');
@@ -354,6 +375,15 @@ const options = {
               <a href="https://www.instagram.com/shivgouri_silksarees_gokak" target="_blank" rel="noopener noreferrer" className="hidden lg:flex items-center gap-2 hover:opacity-70 transition-opacity">
                 <span>Instagram</span>
               </a>
+              {user ? (
+                <button onClick={() => {
+                    localStorage.removeItem('mock_user');
+                    signOut(auth);
+                    setUser(null);
+                  }} className="hidden sm:block hover:opacity-70 transition-opacity">Logout</button>
+              ) : (
+                <button onClick={() => setIsLoginOpen(true)} className="hidden sm:block hover:opacity-70 transition-opacity">Login</button>
+              )}
               <div className="flex items-center gap-1 sm:gap-2">
                 <button onClick={() => setLang('en')} className={`hover:opacity-70 transition-opacity ${lang === 'en' ? 'font-bold' : 'opacity-50'}`}>EN</button>
                 <span className="opacity-50">|</span>
@@ -571,7 +601,7 @@ const options = {
                      <img draggable="false" referrerPolicy="no-referrer" src={cat.image} alt={cat.en} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000" />
                    ) : (
                      <div className="w-full h-full flex items-center justify-center bg-[#3C101B] text-white/20">
-                       <ImageIcon size={64} strokeWidth={1} />
+                       <img src="/shivgouri-team.png" alt="Shivgouri Team" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
                      </div>
                    )}
                    <div className="absolute inset-0 bg-gradient-to-t from-[#3C101B]/90 via-[#3C101B]/20 to-transparent pointer-events-none" />
@@ -802,8 +832,8 @@ const options = {
                <span>{waNumber}</span>
              </div>
           </div>
-          <div className="flex-1 w-full relative aspect-[4/3] md:aspect-[3/2] bg-[#EAE5DB]/10 flex items-center justify-center text-white/20">
-             <ImageIcon size={64} strokeWidth={1} />
+           <div className="flex-1 w-full relative aspect-[4/3] md:aspect-[3/2] bg-[#EAE5DB]/10 flex items-center justify-center text-white/20 overflow-hidden">
+             <img src="/shivgouri-team.png" alt="Shivgouri Team" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
           </div>
         </div>
       </section>
@@ -932,6 +962,7 @@ const options = {
         />
       )}
 
+      {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} />}
       {/* Product Details Modal */}
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-6 lg:p-12">
@@ -969,7 +1000,7 @@ const options = {
                   <img referrerPolicy="no-referrer" src={selectedProduct.image} alt={(selectedProduct[lang] || selectedProduct.en)?.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[#3C101B]/20">
-                    <ImageIcon size={64} strokeWidth={1} />
+                    <img src="/shivgouri-team.png" alt="Shivgouri Team" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
                   </div>
                 )}
               </div>
