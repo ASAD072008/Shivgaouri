@@ -1309,6 +1309,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                             <p><span className="font-semibold">City:</span> {order.customerDetails.city}</p>
                             <p><span className="font-semibold">District:</span> {order.customerDetails.district}</p>
                             <p><span className="font-semibold">Pincode:</span> {order.customerDetails.pincode}</p>
+                            {order.paymentMethod && <p><span className="font-semibold">Payment:</span> <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${order.paymentMethod === 'online' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{order.paymentMethod === 'online' ? 'Online' : 'COD'}</span></p>}
                           </div>
                         </div>
                         <div>

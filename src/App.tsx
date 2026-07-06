@@ -97,6 +97,7 @@ export default function App() {
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [showCheckoutWarning, setShowCheckoutWarning] = useState(false);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({ name: '', mobileNumber: '', alternateNumber: '', address: '', landmark: '', city: '', district: '', pincode: '' });
   const [orders, setOrders] = useState<Order[]>([]);
 
@@ -141,54 +142,122 @@ export default function App() {
     setShowCheckoutForm(true);
   };
 
-  const submitOrder = async () => {
+  const processToPayment = () => {
     if (!customerDetails.name || !customerDetails.mobileNumber || !customerDetails.address || !customerDetails.city || !customerDetails.district || !customerDetails.pincode) {
       alert("Please fill all mandatory fields (Name, Mobile, Address, City, District, Pincode).");
       return;
     }
+    setShowPaymentOptions(true);
+  };
 
+    const submitOrder = async (paymentMethod: 'cod' | 'online') => {
     const totalAmount = cart.reduce((total, item) => {
       const price = (item.product.inOffer || item.product.isDailyOffer) && item.product.offerPrice ? item.product.offerPrice : item.product.price;
       const parsedPrice = parseInt(String(price).replace(/\D/g, ''), 10) || 0;
       return total + (parsedPrice * item.quantity);
     }, 0);
 
-    try {
-      // Save order details directly (Cash on Delivery / Manual Payment)
-      const orderData = {
-        customerDetails,
-        products: cart.map(item => ({
-          productId: item.product.id,
-          name: item.product.en?.name,
-          price: (item.product.inOffer || item.product.isDailyOffer) && item.product.offerPrice ? item.product.offerPrice : item.product.price,
-          quantity: item.quantity,
-          color: item.selectedColor
-        })),
-        totalAmount,
-        status: 'pending' as const,
-        createdAt: Date.now()
-      };
+    const handleSuccess = async (method: 'cod' | 'online') => {
+      try {
+        const orderData = {
+          customerDetails,
+          products: cart.map(item => ({
+            productId: item.product.id,
+            name: item.product.en?.name,
+            price: (item.product.inOffer || item.product.isDailyOffer) && item.product.offerPrice ? item.product.offerPrice : item.product.price,
+            quantity: item.quantity,
+            color: item.selectedColor
+          })),
+          totalAmount,
+          status: 'pending' as const,
+          paymentMethod: method,
+          createdAt: Date.now()
+        };
 
-      await saveOrder(orderData);
+        const { saveOrder, saveProduct } = await import('./firebase');
+        await saveOrder(orderData);
 
-      // Reduce stock
-      const { saveProduct } = await import('./firebase');
-      for (const item of cart) {
-        if (item.product.stock !== undefined && item.product.id) {
-          const newStock = Math.max(0, item.product.stock - item.quantity);
-          await saveProduct({ ...item.product, stock: newStock });
-          setProducts(prev => prev.map(p => p.id === item.product.id ? { ...p, stock: newStock } : p));
+        for (const item of cart) {
+          if (item.product.stock !== undefined && item.product.id) {
+            const newStock = Math.max(0, item.product.stock - item.quantity);
+            await saveProduct({ ...item.product, stock: newStock });
+            setProducts(prev => prev.map(p => p.id === item.product.id ? { ...p, stock: newStock } : p));
+          }
         }
-      }
 
-      setCart([]);
-      setCustomerDetails({ name: '', mobileNumber: '', alternateNumber: '', address: '', landmark: '', city: '', district: '', pincode: '' });
-      setShowCheckoutForm(false);
-      setIsCartOpen(false);
-      alert('Order placed successfully! We will contact you via WhatsApp for confirmation.');
-    } catch (e) {
-      console.error(e);
-      alert(e.message || 'Error placing order, please try again.');
+        setCart([]);
+        setCustomerDetails({ name: '', mobileNumber: '', alternateNumber: '', address: '', landmark: '', city: '', district: '', pincode: '' });
+        setShowCheckoutForm(false);
+        setIsCartOpen(false);
+        setShowPaymentOptions(false);
+        alert(method === 'online' ? 'Online payment successful! Order placed.' : 'Order placed successfully! Your order will be shipped via Cash on Delivery.');
+      } catch (e: any) {
+        console.error(e);
+        alert(e.message || 'Error saving order, please contact support.');
+      }
+    };
+
+    if (paymentMethod === 'online') {
+      try {
+        const res = await fetch('/api/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: totalAmount * 100, currency: 'INR' })
+        });
+        
+        if (!res.ok) {
+          throw new Error('Failed to create Razorpay order. Backend is likely not running or misconfigured.');
+        }
+
+        const data = await res.json();
+        console.log('Order Data:', data);
+console.log('Key:', import.meta.env.VITE_RAZORPAY_KEY_ID);
+const options = {
+          key: data.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID,
+          amount: data.amount,
+          currency: data.currency,
+          name: 'Shivgouri Silk Sarees',
+          description: 'Order Payment',
+          order_id: data.order_id,
+          handler: async function (response: any) {
+            try {
+              const verifyRes = await fetch('/api/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(response)
+              });
+              const verifyData = await verifyRes.json();
+              
+              if (verifyData.success) {
+                await handleSuccess('online');
+              } else {
+                alert('Payment verification failed. If money was deducted, please contact support.');
+              }
+            } catch (err) {
+              console.error(err);
+              alert('Error verifying payment.');
+            }
+          },
+          prefill: {
+            name: customerDetails.name,
+            contact: customerDetails.mobileNumber,
+          },
+          theme: {
+            color: '#3C101B'
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response: any){
+          alert('Payment failed: ' + response.error.description);
+        });
+        rzp.open();
+      } catch (err: any) {
+        console.error(err);
+        alert(err.message || 'Error initiating online payment.');
+      }
+    } else {
+      await handleSuccess('cod');
     }
   };
 
@@ -1208,16 +1277,69 @@ export default function App() {
               </div>
 
               <button 
-                onClick={submitOrder}
+                onClick={processToPayment}
                 className="w-full bg-[#3C101B] text-white py-4 text-[12px] font-bold tracking-[0.1em] uppercase hover:bg-black transition-colors rounded-md shadow-lg"
               >
-                Confirm & Place Order
+                Confirm Delivery Details
               </button>
             </div>
           </div>
         </div>
       )}
       
+            {/* Payment Options Popup */}
+      {showPaymentOptions && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowPaymentOptions(false)}></div>
+          <div className="relative bg-[#FAFAFA] w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <button 
+              onClick={() => setShowPaymentOptions(false)}
+              className="absolute right-4 top-4 z-10 w-8 h-8 flex items-center justify-center bg-[#EAE5DB] rounded-full text-[#3C101B] hover:bg-[#3C101B] hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <div className="p-8">
+              <h2 className="font-serif text-2xl text-[#3C101B] mb-2 italic">
+                Payment Method
+              </h2>
+              <p className="text-sm text-gray-500 mb-6">How would you like to pay for your order?</p>
+              
+              <div className="space-y-4">
+                <button 
+                  onClick={() => submitOrder('cod')}
+                  className="w-full bg-white border border-gray-200 p-4 rounded-lg flex items-center justify-between hover:border-[#3C101B] hover:shadow-md transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-[#EAE5DB] rounded-full flex items-center justify-center text-[#3C101B] group-hover:bg-[#3C101B] group-hover:text-white transition-colors">
+                      <span className="font-bold">₹</span>
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-bold text-[#3C101B] text-sm">Cash on Delivery</h4>
+                      <p className="text-xs text-gray-500">Pay when your order arrives</p>
+                    </div>
+                  </div>
+                </button>
+                
+                <button 
+                  onClick={() => submitOrder('online')}
+                  className="w-full bg-white border border-gray-200 p-4 rounded-lg flex items-center justify-between hover:border-[#3C101B] hover:shadow-md transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-[#EAE5DB] rounded-full flex items-center justify-center text-[#3C101B] group-hover:bg-[#3C101B] group-hover:text-white transition-colors">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-bold text-[#3C101B] text-sm">Online Payment</h4>
+                      <p className="text-xs text-gray-500">UPI, Cards, NetBanking</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Offer Popup */}
 
       {showOffer && offers.filter(o => o.isActive).length > 0 && (

@@ -57,5 +57,12 @@ export type Order = {
   }[];
   totalAmount: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  paymentMethod?: 'cod' | 'online';
   createdAt: number; // timestamp
 };
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
