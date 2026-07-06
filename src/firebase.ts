@@ -79,23 +79,25 @@ export async function fetchProducts(): Promise<Product[]> {
 }
 
 export async function saveProduct(product: Product): Promise<void> {
-  const path = `products/${product.id}`;
+  const path = `products/\${product.id}`;
   try {
     const docRef = doc(db, 'products', product.id.toString());
     const cleanProduct = JSON.parse(JSON.stringify(product));
     await setDoc(docRef, cleanProduct);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
   }
 }
 
 export async function deleteProduct(id: number): Promise<void> {
-  const path = `products/${id}`;
+  const path = `products/\${id}`;
   try {
     const docRef = doc(db, 'products', id.toString());
     await deleteDoc(docRef);
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
+    throw error;
   }
 }
 
@@ -115,23 +117,25 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 export async function saveCategory(category: Category): Promise<void> {
-  const path = `categories/${category.id}`;
+  const path = `categories/\${category.id}`;
   try {
     const docRef = doc(db, 'categories', category.id);
     const cleanCategory = JSON.parse(JSON.stringify(category));
     await setDoc(docRef, cleanCategory);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
   }
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const path = `categories/${id}`;
+  const path = `categories/\${id}`;
   try {
     const docRef = doc(db, 'categories', id);
     await deleteDoc(docRef);
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
+    throw error;
   }
 }
 
@@ -151,23 +155,25 @@ export async function fetchOffers(): Promise<Offer[]> {
 }
 
 export async function saveOffer(offer: Offer): Promise<void> {
-  const path = `offers/${offer.id}`;
+  const path = `offers/\${offer.id}`;
   try {
     const docRef = doc(db, 'offers', offer.id);
     const cleanOffer = JSON.parse(JSON.stringify(offer));
     await setDoc(docRef, cleanOffer);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
   }
 }
 
 export async function deleteOffer(id: string): Promise<void> {
-  const path = `offers/${id}`;
+  const path = `offers/\${id}`;
   try {
     const docRef = doc(db, 'offers', id);
     await deleteDoc(docRef);
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
+    throw error;
   }
 }
 
@@ -187,26 +193,27 @@ export async function fetchOrders(): Promise<Order[]> {
 }
 
 export async function saveOrder(order: Order): Promise<void> {
-  // If no ID is provided, create a new one based on timestamp
   if (!order.id) {
-    order.id = `ORD-${Date.now()}`;
+    order.id = `ORD-\${Date.now()}`;
   }
-  const path = `orders/${order.id}`;
+  const path = `orders/\${order.id}`;
   try {
     const docRef = doc(db, 'orders', order.id);
     const cleanOrder = JSON.parse(JSON.stringify(order));
     await setDoc(docRef, cleanOrder);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
   }
 }
 
 export async function deleteOrder(id: string): Promise<void> {
-  const path = `orders/${id}`;
+  const path = `orders/\${id}`;
   try {
     const docRef = doc(db, 'orders', id);
     await deleteDoc(docRef);
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
+    throw error;
   }
 }

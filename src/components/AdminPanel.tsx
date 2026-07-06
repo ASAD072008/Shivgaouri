@@ -22,6 +22,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
   const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<string | null>(null);
   const [deleteOfferConfirm, setDeleteOfferConfirm] = useState<string | null>(null);
   const [deleteOrderConfirm, setDeleteOrderConfirm] = useState<string | null>(null);
+  const [formMessage, setFormMessage] = useState<{type: 'error'|'success', text: string} | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
@@ -40,19 +41,54 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
 
   const handleSave = async () => {
     if (!editing) return;
-    console.log("Saving product: ", editing.id);
+
+    if (!editing.en?.name?.trim()) {
+      setFormMessage({type: 'error', text: "Product Name (English) is required."});
+      return;
+    }
+    if (!editing.kn?.name?.trim()) {
+      setFormMessage({type: 'error', text: "Product Name (Kannada) is required."});
+      return;
+    }
+    if (!editing.price?.trim()) {
+      setFormMessage({type: 'error', text: "Price is required."});
+      return;
+    }
+    if (!editing.categoryId) {
+      setFormMessage({type: 'error', text: "Please select a category."});
+      return;
+    }
+    if (!editing.image) {
+      // Use a placeholder if no image provided for easier testing
+      editing.image = "https://images.unsplash.com/photo-1610189013669-7b3b33190805?auto=format&fit=crop&q=80";
+    }
+
+    console.log("============== ADMIN PANEL SAVE INITIATED ==============");
+    console.log("[AdminPanel] Saving product ID: ", editing.id);
+    console.log("[AdminPanel] Product payload object:", JSON.stringify(editing, null, 2));
     try {
+      console.log("[AdminPanel] Calling saveProduct...");
       await saveProduct(editing);
+      console.log("[AdminPanel] saveProduct returned successfully!");
       const exists = products.find(p => p.id === editing.id);
       if (exists) {
         setProducts(products.map(p => p.id === editing.id ? editing : p));
       } else {
         setProducts([...products, editing]);
       }
-    } catch (e) {
+    } catch (e: any) {
+      console.error("============== ADMIN PANEL SAVE ERROR ==============");
       console.error("Error saving product to Firestore:", e);
+      console.error("Error message:", e.message);
+      if (e.name === 'QuotaExceededError' || e.message.includes('quota')) {
+        setFormMessage({type: 'error', text: "Storage is full! Firestore can only hold a few images. Please delete some old products or use smaller images."});
+      } else {
+        setFormMessage({type: 'error', text: "Failed to save product: " + e.message});
+      }
+      return;
     }
-    setEditing(null);
+    setFormMessage({type: 'success', text: "Product saved successfully!"});
+    setTimeout(() => setEditing(null), 1500);
   };
 
   const handleDelete = async (id: number) => {
@@ -66,21 +102,23 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
   };
 
   const handleAdd = () => {
+    const defaultCat = categories.length > 0 ? categories[0] : null;
+    setFormMessage(null);
     setEditing({
       id: Date.now(),
       price: '₹',
       image: '',
       images: [],
       colors: [],
-      en: { name: '', badge: '', description: '', subcategory: '' },
-      kn: { name: '', badge: '', description: '', subcategory: '' },
-      categoryId: '',
+      en: { name: '', badge: defaultCat ? defaultCat.en : '', description: '', subcategory: '' },
+      kn: { name: '', badge: defaultCat ? defaultCat.kn : '', description: '', subcategory: '' },
+      categoryId: defaultCat ? defaultCat.id : '',
       subcategoryId: '',
       inOffer: false,
       isDailyOffer: false,
       discountRate: '',
       offerPrice: '',
-      stock: 0,
+      stock: 10,
       specifications: []
     });
   };
@@ -96,8 +134,8 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const MAX_WIDTH = 600;
-        const MAX_HEIGHT = 800;
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 600;
 
         if (width > height) {
           if (width > MAX_WIDTH) {
@@ -117,7 +155,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          setEditing({ ...editing, image: dataUrl });
+          setEditing(prev => ({ ...prev!, image: dataUrl }));
         }
       };
       img.src = event.target?.result as string;
@@ -137,8 +175,8 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const MAX_WIDTH = 600;
-          const MAX_HEIGHT = 800;
+          const MAX_WIDTH = 400;
+          const MAX_HEIGHT = 600;
 
           if (width > height) {
             if (width > MAX_WIDTH) {
@@ -181,8 +219,8 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const MAX_WIDTH = 600;
-        const MAX_HEIGHT = 800;
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 600;
 
         if (width > height) {
           if (width > MAX_WIDTH) {
@@ -202,7 +240,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          setEditingCategory({ ...editingCategory, image: dataUrl });
+          setEditingCategory(prev => ({ ...prev!, image: dataUrl }));
         }
       };
       img.src = event.target?.result as string;
@@ -252,7 +290,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
     const reader = new FileReader();
     reader.onloadend = () => {
       const dataUrl = reader.result as string;
-      setEditingOffer({ ...editingOffer, image: dataUrl });
+      setEditingOffer(prev => ({ ...prev!, image: dataUrl }));
     };
     reader.readAsDataURL(file);
   };
@@ -405,7 +443,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Title</label>
                       <input 
                         type="text" 
-                        value={editingOffer.en.title} 
+                        value={editingOffer.en?.title} 
                         onChange={e => setEditingOffer({...editingOffer, en: {...editingOffer.en, title: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
                       />
@@ -413,7 +451,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div>
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Description</label>
                       <textarea 
-                        value={editingOffer.en.description} 
+                        value={editingOffer.en?.description} 
                         onChange={e => setEditingOffer({...editingOffer, en: {...editingOffer.en, description: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] h-24" 
                       />
@@ -422,7 +460,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Button Text</label>
                       <input 
                         type="text" 
-                        value={editingOffer.en.buttonText} 
+                        value={editingOffer.en?.buttonText} 
                         onChange={e => setEditingOffer({...editingOffer, en: {...editingOffer.en, buttonText: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
                       />
@@ -438,7 +476,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Title</label>
                       <input 
                         type="text" 
-                        value={editingOffer.kn.title} 
+                        value={editingOffer.kn?.title} 
                         onChange={e => setEditingOffer({...editingOffer, kn: {...editingOffer.kn, title: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
                       />
@@ -446,7 +484,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div>
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Description</label>
                       <textarea 
-                        value={editingOffer.kn.description} 
+                        value={editingOffer.kn?.description} 
                         onChange={e => setEditingOffer({...editingOffer, kn: {...editingOffer.kn, description: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] h-24" 
                       />
@@ -455,7 +493,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Button Text</label>
                       <input 
                         type="text" 
-                        value={editingOffer.kn.buttonText} 
+                        value={editingOffer.kn?.buttonText} 
                         onChange={e => setEditingOffer({...editingOffer, kn: {...editingOffer.kn, buttonText: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
                       />
@@ -627,7 +665,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
             <div className="space-y-6 max-w-2xl mx-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-[#1a1a1a]">Edit Product</h3>
-                <button onClick={() => setEditing(null)} className="text-sm text-gray-500 hover:text-black transition-colors font-medium">Cancel</button>
+                <button onClick={() => { setEditing(null); setFormMessage(null); }} className="text-sm text-gray-500 hover:text-black transition-colors font-medium">Cancel</button>
               </div>
               
               <div className="grid gap-5">
@@ -858,7 +896,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                   {categories.length > 0 ? (
                     <div className="space-y-3">
                       <select
-                        value={editing.categoryId || categories.find(c => c.en === editing.en.badge)?.id || ''}
+                        value={editing.categoryId || categories.find(c => c.en === editing.en?.badge)?.id || ''}
                         onChange={e => {
                           const cat = categories.find(c => c.id === e.target.value);
                           if (cat) {
@@ -881,7 +919,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       
                       {/* Subcategory Select (if applicable) */}
                       {(() => {
-                        const activeCat = categories.find(c => c.id === (editing.categoryId || categories.find(cat => cat.en === editing.en.badge)?.id));
+                        const activeCat = categories.find(c => c.id === (editing.categoryId || categories.find(cat => cat.en === editing.en?.badge)?.id));
                         if (activeCat && activeCat.subcategories && activeCat.subcategories.length > 0) {
                           return (
                             <div>
@@ -934,7 +972,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Product Name</label>
                       <input 
                         type="text" 
-                        value={editing.en.name} 
+                        value={editing.en?.name} 
                         onChange={e => setEditing({...editing, en: {...editing.en, name: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
                       />
@@ -942,7 +980,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div>
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Description</label>
                       <textarea 
-                        value={editing.en.description || ''} 
+                        value={editing.en?.description || ''} 
                         onChange={e => setEditing({...editing, en: {...editing.en, description: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] h-24" 
                       />
@@ -958,7 +996,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Product Name</label>
                       <input 
                         type="text" 
-                        value={editing.kn.name} 
+                        value={editing.kn?.name} 
                         onChange={e => setEditing({...editing, kn: {...editing.kn, name: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
                       />
@@ -966,7 +1004,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div>
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Description</label>
                       <textarea 
-                        value={editing.kn.description || ''} 
+                        value={editing.kn?.description || ''} 
                         onChange={e => setEditing({...editing, kn: {...editing.kn, description: e.target.value}})} 
                         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] h-24" 
                       />
@@ -976,6 +1014,12 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
               </div>
 
               <div className="pt-6">
+                
+                {formMessage && (
+                  <div className={`p-3 mb-4 rounded-md text-sm ${formMessage.type === 'error' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-600 border border-green-200'}`}>
+                    {formMessage.text}
+                  </div>
+                )}
                 <button 
                   onClick={handleSave} 
                   className="w-full bg-[#8B1C31] text-white py-4 rounded-md text-[11px] font-medium tracking-widest uppercase hover:bg-[#6A1525] transition-colors flex items-center justify-center gap-2"
@@ -1006,14 +1050,14 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div className="flex items-center gap-5 w-full sm:w-auto mb-4 sm:mb-0">
                       <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                         {p.image ? (
-                          <img referrerPolicy="no-referrer" src={p.image} alt={p.en.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          <img referrerPolicy="no-referrer" src={p.image} alt={p.en?.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={20}/></div>
                         )}
                       </div>
                       <div>
-                        <h4 className="font-medium text-[#1a1a1a] font-serif text-lg leading-tight mb-1">{p.en.name}</h4>
-                        <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">{p.price} <span className="mx-2 text-gray-300">|</span> {p.en.badge} {p.en.subcategory ? ` / ${p.en.subcategory}` : ''}</p>
+                        <h4 className="font-medium text-[#1a1a1a] font-serif text-lg leading-tight mb-1">{p.en?.name}</h4>
+                        <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">{p.price} <span className="mx-2 text-gray-300">|</span> {p.en?.badge} {p.en?.subcategory ? ` / ${p.en?.subcategory}` : ''}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -1141,19 +1185,19 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div className="flex items-center gap-5 w-full sm:w-auto mb-4 sm:mb-0">
                       <div className="w-24 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                         {o.image ? (
-                          <img referrerPolicy="no-referrer" src={o.image} alt={o.en.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          <img referrerPolicy="no-referrer" src={o.image} alt={o.en?.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={20}/></div>
                         )}
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-[#1a1a1a] text-sm leading-tight">{o.en.title}</h4>
+                          <h4 className="font-medium text-[#1a1a1a] text-sm leading-tight">{o.en?.title}</h4>
                           {o.isActive && (
                             <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold tracking-widest uppercase">Active</span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-400 font-serif">{o.kn.title}</p>
+                        <p className="text-xs text-gray-400 font-serif">{o.kn?.title}</p>
                       </div>
                     </div>
                     

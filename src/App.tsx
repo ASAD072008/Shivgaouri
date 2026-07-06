@@ -75,7 +75,6 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   
   const [products, setProducts] = useState<Product[]>([]);
-
   const [categories, setCategories] = useState<import('./types').Category[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [showOffer, setShowOffer] = useState(false);
@@ -84,6 +83,7 @@ export default function App() {
   const [showCheckoutWarning, setShowCheckoutWarning] = useState(false);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({ name: '', mobileNumber: '', alternateNumber: '', address: '', landmark: '', city: '', district: '', pincode: '' });
+  const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -109,7 +109,7 @@ export default function App() {
           }
         }
       } catch (err) {
-        console.error("Error loading data from Firestore:", err);
+        console.error("Error loading data from localStorage:", err);
       } finally {
         setIsLoading(false);
       }
@@ -118,6 +118,7 @@ export default function App() {
   }, []);
 
   const waNumber = '918329732432';
+
   const t = content[lang];
 
   const handleCheckout = () => {
@@ -138,129 +139,41 @@ export default function App() {
     }, 0);
 
     try {
-      // 1. Create order on the backend
-      const response = await fetch('/api/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: totalAmount * 100 }) // amount in paise
-      });
-
-      if (!response.ok) {
-        let errMsg = 'Failed to create order';
-        try {
-          const errData = await response.json();
-          errMsg = errData.error || errMsg;
-        } catch(e) {}
-        throw new Error(errMsg);
-      }
-
-      const orderResponse = await response.json();
-
-      // 2. Open Razorpay checkout
-      const options = {
-        key: orderResponse.razorpay_key_id,
-        amount: orderResponse.amount,
-        currency: orderResponse.currency,
-        name: "Shivgouri",
-        description: "Payment for order",
-        order_id: orderResponse.id,
-        config: {
-          display: {
-            blocks: {
-              upi_id: {
-                name: "Pay via UPI ID",
-                instruments: [
-                  {
-                    method: "upi",
-                    flows: ["collect"]
-                  }
-                ]
-              },
-              other: {
-                name: "Other Payment Modes",
-                instruments: [
-                  { method: "upi", flows: ["qr", "intent"] },
-                  { method: "card" },
-                  { method: "netbanking" },
-                  { method: "wallet" }
-                ]
-              }
-            },
-            sequence: ["block.upi_id", "block.other"],
-            preferences: {
-              show_default_blocks: false
-            }
-          }
-        },
-        handler: async function (response: any) {
-          // 3. Verify payment signature on the backend
-          const verifyResponse = await fetch('/api/verify-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
-            })
-          });
-
-          if (!verifyResponse.ok) {
-            alert('Payment verification failed.');
-            return;
-          }
-
-          // Payment verified successfully! Save order details
-          const orderData: Order = {
-            customerDetails,
-            products: cart.map(item => ({
-              productId: item.product.id,
-              name: (item.product.en).name,
-              price: (item.product.inOffer || item.product.isDailyOffer) && item.product.offerPrice ? item.product.offerPrice : item.product.price,
-              quantity: item.quantity,
-              color: item.selectedColor
-            })),
-            totalAmount,
-            status: 'pending',
-            createdAt: Date.now()
-          };
-
-          await saveOrder(orderData);
-
-          // Reduce stock
-          const { saveProduct } = await import('./firebase');
-          for (const item of cart) {
-            if (item.product.stock !== undefined && item.product.id) {
-              const newStock = Math.max(0, item.product.stock - item.quantity);
-              await saveProduct({ ...item.product, stock: newStock });
-              setProducts(prev => prev.map(p => p.id === item.product.id ? { ...p, stock: newStock } : p));
-            }
-          }
-
-          setCart([]);
-          setCustomerDetails({ name: '', mobileNumber: '', alternateNumber: '', address: '', landmark: '', city: '', district: '', pincode: '' });
-          setShowCheckoutForm(false);
-          setIsCartOpen(false);
-          alert('Order placed successfully!');
-        },
-        prefill: {
-          name: customerDetails.name,
-          contact: customerDetails.mobileNumber,
-        },
-        theme: {
-          color: "#8B1C31"
-        }
+      // Save order details directly (Cash on Delivery / Manual Payment)
+      const orderData = {
+        customerDetails,
+        products: cart.map(item => ({
+          productId: item.product.id,
+          name: item.product.en?.name,
+          price: (item.product.inOffer || item.product.isDailyOffer) && item.product.offerPrice ? item.product.offerPrice : item.product.price,
+          quantity: item.quantity,
+          color: item.selectedColor
+        })),
+        totalAmount,
+        status: 'pending' as const,
+        createdAt: Date.now()
       };
 
-      // @ts-ignore
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', function (response: any) {
-        alert(`Payment failed: ${response.error.description}`);
-      });
-      rzp.open();
+      await saveOrder(orderData);
 
-    } catch (e: any) {
+      // Reduce stock
+      const { saveProduct } = await import('./firebase');
+      for (const item of cart) {
+        if (item.product.stock !== undefined && item.product.id) {
+          const newStock = Math.max(0, item.product.stock - item.quantity);
+          await saveProduct({ ...item.product, stock: newStock });
+          setProducts(prev => prev.map(p => p.id === item.product.id ? { ...p, stock: newStock } : p));
+        }
+      }
+
+      setCart([]);
+      setCustomerDetails({ name: '', mobileNumber: '', alternateNumber: '', address: '', landmark: '', city: '', district: '', pincode: '' });
+      setShowCheckoutForm(false);
+      setIsCartOpen(false);
+      alert('Order placed successfully! We will contact you via WhatsApp for confirmation.');
+    } catch (e) {
       console.error(e);
-      alert(e.message || 'Error initiating checkout, please try again.');
+      alert(e.message || 'Error placing order, please try again.');
     }
   };
 
@@ -286,18 +199,18 @@ export default function App() {
   // Dynamic categories based on explicit categories or fallback to current products
   const englishBadges = categories.length > 0 
     ? categories.map(c => c.en) 
-    : Array.from(new Set(products.map(p => p.en.badge).filter(Boolean)));
+    : Array.from(new Set(products.map(p => p.en?.badge).filter(Boolean)));
     
   const filterCategories = ['All', ...englishBadges];
   
   const heroCategories = categories.length > 0 
     ? categories 
-    : Array.from(new Set(products.map(p => p.en.badge).filter(Boolean))).map((badge, idx) => {
-        const prod = products.find(p => p.en.badge === badge);
+    : Array.from(new Set(products.map(p => p.en?.badge).filter(Boolean))).map((badge, idx) => {
+        const prod = products.find(p => p.en?.badge === badge);
         return {
           id: `fallback-${idx}`,
           en: badge,
-          kn: prod?.kn.badge || badge,
+          kn: prod?.kn?.badge || badge,
           image: prod?.image || prod?.images?.[0] || '',
           section: 'Saree'
         };
@@ -308,12 +221,12 @@ export default function App() {
     : heroCategories.filter(c => c.section === activeSection);
   
   const filteredProducts = products.filter(p => {
-    const pCat = categories.find(c => c.en === p.en.badge);
+    const pCat = categories.find(c => c.en === p.en?.badge);
     const pSection = pCat?.section || 'Saree';
     
     const matchesSection = pSection === activeSection;
-    const matchesCategory = activeCategory === 'All' || p.en.badge === activeCategory;
-    const matchesSubcategory = activeSubcategory === 'All' || p.en.subcategory === activeSubcategory;
+    const matchesCategory = activeCategory === 'All' || p.en?.badge === activeCategory;
+    const matchesSubcategory = activeSubcategory === 'All' || p.en?.subcategory === activeSubcategory;
     return matchesSection && matchesCategory && matchesSubcategory;
   });
 
@@ -432,9 +345,9 @@ export default function App() {
           <div className="whitespace-nowrap animate-marquee flex items-center gap-8 w-max">
             {[...offers.filter(o => o.isActive), ...offers.filter(o => o.isActive), ...offers.filter(o => o.isActive), ...offers.filter(o => o.isActive)].map((offer, idx) => (
               <span key={idx} className="text-[11px] font-bold tracking-widest uppercase flex items-center gap-8">
-                 <span>{(offer[lang] || offer.en).title}</span>
+                 <span>{(offer[lang] || offer.en)?.title}</span>
                  <span className="opacity-50 text-[#A28B55]">✦</span>
-                 <span>{(offer[lang] || offer.en).description}</span>
+                 <span>{(offer[lang] || offer.en)?.description}</span>
                  <span className="opacity-50 text-[#A28B55]">✦</span>
               </span>
             ))}
@@ -946,7 +859,7 @@ export default function App() {
                 if (navigator.share) {
                   navigator.share({
                     title: (selectedProduct[lang] || selectedProduct.en).name,
-                    text: `Check out ${(selectedProduct[lang] || selectedProduct.en).name} at Shivgouri`,
+                    text: `Check out ${(selectedProduct[lang] || selectedProduct.en)?.name} at Shivgouri`,
                     url: url
                   }).catch(console.error);
                 } else {
@@ -969,7 +882,7 @@ export default function App() {
             <div className="w-full md:w-[55%] lg:w-3/5 bg-[#EAE5DB] relative h-[50vh] md:h-full">
               <div className="relative w-full h-full">
                 {selectedProduct.image ? (
-                  <img referrerPolicy="no-referrer" src={selectedProduct.image} alt={(selectedProduct[lang] || selectedProduct.en).name} className="w-full h-full object-cover" />
+                  <img referrerPolicy="no-referrer" src={selectedProduct.image} alt={(selectedProduct[lang] || selectedProduct.en)?.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[#3C101B]/20">
                     <ImageIcon size={64} strokeWidth={1} />
@@ -981,7 +894,7 @@ export default function App() {
             {/* Scrollable Details Area */}
             <div className="w-full md:w-[45%] lg:w-2/5 p-6 md:p-10 lg:p-14 flex flex-col h-[50vh] md:h-full overflow-y-auto bg-[#FAFAFA]">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-[10px] uppercase tracking-widest text-[#A28B55] block">{(selectedProduct[lang] || selectedProduct.en).badge} {(selectedProduct[lang] || selectedProduct.en).subcategory ? `/ ${(selectedProduct[lang] || selectedProduct.en).subcategory}` : ''}</span>
+                <span className="text-[10px] uppercase tracking-widest text-[#A28B55] block">{(selectedProduct[lang] || selectedProduct.en)?.badge} {(selectedProduct[lang] || selectedProduct.en)?.subcategory ? `/ ${(selectedProduct[lang] || selectedProduct.en)?.subcategory}` : ''}</span>
                 {(selectedProduct.inOffer || selectedProduct.isDailyOffer) && (
                   <span className="bg-[#8B1C31] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">{selectedProduct.discountRate || 'Offer'}</span>
                 )}
@@ -989,7 +902,7 @@ export default function App() {
                   <span className="bg-orange-500 text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">Low Stock</span>
                 )}
               </div>
-              <h2 className="font-serif text-3xl md:text-4xl text-[#3C101B] mb-3 leading-tight">{(selectedProduct[lang] || selectedProduct.en).name}</h2>
+              <h2 className="font-serif text-3xl md:text-4xl text-[#3C101B] mb-3 leading-tight">{(selectedProduct[lang] || selectedProduct.en)?.name}</h2>
               
               <div className="flex items-end gap-4 mb-8">
                 {(selectedProduct.inOffer || selectedProduct.isDailyOffer) && selectedProduct.offerPrice ? (
@@ -1020,11 +933,11 @@ export default function App() {
                 </div>
               )}
               
-              {(selectedProduct[lang] || selectedProduct.en).description && (
+              {(selectedProduct[lang] || selectedProduct.en)?.description && (
                 <div className="mb-8">
                   <h4 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-4 border-b border-[#3C101B]/10 pb-2">Description</h4>
                   <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
-                    {(selectedProduct[lang] || selectedProduct.en).description}
+                    {(selectedProduct[lang] || selectedProduct.en)?.description}
                   </p>
                 </div>
               )}
@@ -1283,7 +1196,7 @@ export default function App() {
                 onClick={submitOrder}
                 className="w-full bg-[#3C101B] text-white py-4 text-[12px] font-bold tracking-[0.1em] uppercase hover:bg-black transition-colors rounded-md shadow-lg"
               >
-                Pay & Place Order
+                Confirm & Place Order
               </button>
             </div>
           </div>
