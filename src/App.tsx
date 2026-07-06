@@ -64,6 +64,21 @@ const content = {
 
 type CartItem = { product: Product; quantity: number; selectedColor?: string };
 
+const formatDiscount = (d: string | undefined) => {
+  if (!d) return '';
+  let val = d.trim();
+  if (val.toLowerCase().includes('off')) {
+    val = val.replace(/off/i, '').trim();
+    return val.includes('%') ? `${val} OFF` : `${val}% OFF`;
+  }
+  return val.includes('%') ? val : `${val}%`;
+};
+
+const formatPrice = (p: string | undefined) => {
+  if (!p) return '';
+  return p.includes('₹') ? p : `₹${p}`;
+};
+
 export default function App() {
   const [lang, setLang] = useState<'en' | 'kn' | 'hi'>('en');
   const [isAdminOpen, setIsAdminOpen] = useState(false);
@@ -394,7 +409,7 @@ export default function App() {
                        
                        {(product.inOffer || product.isDailyOffer) && product.discountRate && (
                          <div className="absolute top-12 left-3 bg-[#8B1C31] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-1 shadow-sm mt-1">
-                           {product.discountRate}
+                           {formatDiscount(product.discountRate)}
                          </div>
                        )}
 
@@ -431,11 +446,11 @@ export default function App() {
                       <div className="flex flex-col items-start gap-1">
                         {(product.inOffer || product.isDailyOffer) && product.offerPrice ? (
                           <div className="flex items-center gap-3">
-                            <p className="text-[#A28B55] font-bold">{product.offerPrice}</p>
-                            <p className="text-white/40 text-[11px] line-through">{product.price}</p>
+                            <p className="text-[#A28B55] font-bold">{formatPrice(product.offerPrice)}</p>
+                            <p className="text-white/40 text-[11px] line-through">{formatPrice(product.price)}</p>
                           </div>
                         ) : (
-                          <p className="text-[#A28B55] font-medium">{product.price}</p>
+                          <p className="text-[#A28B55] font-medium">{formatPrice(product.price)}</p>
                         )}
                         {product.stock !== undefined && (
                           <p className={`text-[9px] md:text-[10px] whitespace-nowrap font-medium ${product.stock > 0 ? 'text-[#F3EFE8]/50' : 'text-red-400'}`}>
@@ -609,7 +624,7 @@ export default function App() {
             <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" id="slider">
               {filteredProducts.length > 0 ? filteredProducts.map(product => {
                 const pData = product[lang] || product.en;
-                const message = `Hello Shivgouri, I am interested in purchasing the ${pData.name} (${product.price}).`;
+                const message = `Hello Shivgouri, I am interested in purchasing the ${pData.name} (${formatPrice(product.price)}).`;
                 const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
                 return (
                   <div key={product.id} className="min-w-[280px] md:min-w-[320px] snap-start flex flex-col group/item">
@@ -623,7 +638,7 @@ export default function App() {
                        )}
                        {(product.inOffer || product.isDailyOffer) && (
                          <div className="absolute top-3 left-3 bg-[#8B1C31] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-1 shadow-sm">
-                           {product.discountRate || 'Offer'}
+                           {product.discountRate ? formatDiscount(product.discountRate) : "Offer"}
                          </div>
                        )}
                        {product.stock !== undefined && product.stock > 0 && product.stock < 5 && (
@@ -664,11 +679,11 @@ export default function App() {
                       <div className="flex flex-col items-end">
                         {(product.inOffer || product.isDailyOffer) && product.offerPrice ? (
                           <>
-                            <p className="text-[#8B1C31] text-xs md:text-sm whitespace-nowrap font-bold">{product.offerPrice}</p>
-                            <p className="text-gray-400 text-[10px] md:text-xs whitespace-nowrap font-medium line-through">{product.price}</p>
+                            <p className="text-[#8B1C31] text-xs md:text-sm whitespace-nowrap font-bold">{formatPrice(product.offerPrice)}</p>
+                            <p className="text-gray-400 text-[10px] md:text-xs whitespace-nowrap font-medium line-through">{formatPrice(product.price)}</p>
                           </>
                         ) : (
-                          <p className="text-[#A28B55] text-xs md:text-sm whitespace-nowrap font-medium">{product.price}</p>
+                          <p className="text-[#A28B55] text-xs md:text-sm whitespace-nowrap font-medium">{formatPrice(product.price)}</p>
                         )}
                         {product.stock !== undefined && (
                           <p className={`text-[9px] md:text-[10px] whitespace-nowrap font-medium mt-1 ${product.stock > 0 ? 'text-gray-500' : 'text-red-500'}`}>
@@ -896,7 +911,7 @@ export default function App() {
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-[10px] uppercase tracking-widest text-[#A28B55] block">{(selectedProduct[lang] || selectedProduct.en)?.badge} {(selectedProduct[lang] || selectedProduct.en)?.subcategory ? `/ ${(selectedProduct[lang] || selectedProduct.en)?.subcategory}` : ''}</span>
                 {(selectedProduct.inOffer || selectedProduct.isDailyOffer) && (
-                  <span className="bg-[#8B1C31] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">{selectedProduct.discountRate || 'Offer'}</span>
+                  <span className="bg-[#8B1C31] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">{selectedProduct.discountRate ? formatDiscount(selectedProduct.discountRate) : "Offer"}</span>
                 )}
                 {selectedProduct.stock !== undefined && selectedProduct.stock > 0 && selectedProduct.stock < 5 && (
                   <span className="bg-orange-500 text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">Low Stock</span>
@@ -907,11 +922,11 @@ export default function App() {
               <div className="flex items-end gap-4 mb-8">
                 {(selectedProduct.inOffer || selectedProduct.isDailyOffer) && selectedProduct.offerPrice ? (
                   <>
-                    <p className="text-3xl font-bold text-[#8B1C31]">{selectedProduct.offerPrice}</p>
-                    <p className="text-lg font-medium text-gray-400 line-through pb-0.5">{selectedProduct.price}</p>
+                    <p className="text-3xl font-bold text-[#8B1C31]">{formatPrice(selectedProduct.offerPrice)}</p>
+                    <p className="text-lg font-medium text-gray-400 line-through pb-0.5">{formatPrice(selectedProduct.price)}</p>
                   </>
                 ) : (
-                  <p className="text-2xl font-medium text-[#A28B55]">{selectedProduct.price}</p>
+                  <p className="text-2xl font-medium text-[#A28B55]">{formatPrice(selectedProduct.price)}</p>
                 )}
                 {selectedProduct.stock !== undefined && (
                   <p className={`text-sm font-medium mb-1 ${selectedProduct.stock > 0 ? 'text-gray-500' : 'text-red-500'}`}>
@@ -1034,7 +1049,7 @@ export default function App() {
                         {item.selectedColor && (
                           <p className="text-[10px] text-[#3C101B]/70 mb-1 uppercase tracking-widest">Color: {item.selectedColor}</p>
                         )}
-                        <p className="text-[#A28B55] text-[11px] font-medium mb-2">{item.product.price}</p>
+                        <p className="text-[#A28B55] text-[11px] font-medium mb-2">{formatPrice(item.product.price)}</p>
                         <div className="flex items-center gap-3">
                            <button 
                              onClick={() => setCart(cart.map(c => c.product.id === item.product.id && c.selectedColor === item.selectedColor ? { ...c, quantity: Math.max(1, c.quantity - 1) } : c))}

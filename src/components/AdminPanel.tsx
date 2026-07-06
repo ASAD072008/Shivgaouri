@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, Layers, Box } from 'lucide-react';
+import heic2any from 'heic2any';
+import { X, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, Layers, Box, Languages } from 'lucide-react';
 import { Product, Category, Offer, Order } from '../types';
 import { saveProduct, deleteProduct, saveCategory, deleteCategory, saveOffer, deleteOffer, fetchOrders, saveOrder, deleteOrder } from '../firebase';
 
@@ -12,6 +13,82 @@ interface Props {
   setOffers: (o: Offer[]) => void;
   onClose: () => void;
 }
+
+
+const processImageFile = async (
+  file: File, 
+  onSuccess: (dataUrl: string) => void,
+  setMsg: (msg: {type: 'error'|'success', text: string} | null) => void
+) => {
+  let targetFile = file;
+  if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+    try {
+      setMsg({type: 'success', text: 'Converting HEIC image, please wait...'});
+      const convertedBlob = await heic2any({
+        blob: file,
+        toType: "image/jpeg",
+        quality: 0.9
+      });
+      targetFile = new File([Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob], file.name.replace(/.heic$/i, '.jpg'), { type: "image/jpeg" });
+      setMsg(null);
+    } catch (err) {
+      console.error("HEIC conversion error", err);
+      setMsg({type: 'error', text: 'Failed to convert HEIC image.'});
+      return;
+    }
+  }
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      const MAX_WIDTH = 600;
+      const MAX_HEIGHT = 800;
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        onSuccess(dataUrl);
+      }
+    };
+    img.src = event.target?.result as string;
+  };
+  reader.readAsDataURL(targetFile);
+};
+
+const formatPrice = (p: string | undefined) => {
+  if (!p) return '';
+  return p.includes('₹') ? p : `₹${p}`;
+};
+
+
+const translateText = async (text: string) => {
+  if (!text) return '';
+  try {
+    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=kn&dt=t&q=${encodeURIComponent(text)}`);
+    const data = await res.json();
+    return data[0].map((item: any) => item[0]).join('');
+  } catch (error) {
+    console.error("Translation error:", error);
+    return text;
+  }
+};
 
 export default function AdminPanel({ products, setProducts, categories, setCategories, offers, setOffers, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'offers' | 'orders'>('products');
@@ -106,7 +183,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
     setFormMessage(null);
     setEditing({
       id: Date.now(),
-      price: '₹',
+      price: '',
       image: '',
       images: [],
       colors: [],
@@ -126,126 +203,30 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editing) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const MAX_WIDTH = 400;
-        const MAX_HEIGHT = 600;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          setEditing(prev => ({ ...prev!, image: dataUrl }));
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    processImageFile(file, (dataUrl) => {
+      setEditing(prev => ({ ...prev!, image: dataUrl }));
+    }, setFormMessage);
   };
 
   const handleAdditionalImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || !editing) return;
-
     Array.from(files).forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          const MAX_WIDTH = 400;
-          const MAX_HEIGHT = 600;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            setEditing(prev => {
-              if (!prev) return prev;
-              return { ...prev, images: [...(prev.images || []), dataUrl] };
-            });
-          }
-        };
-        img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+      processImageFile(file, (dataUrl) => {
+        setEditing(prev => {
+          if (!prev) return prev;
+          return { ...prev, images: [...(prev.images || []), dataUrl] };
+        });
+      }, setFormMessage);
     });
   };
 
   const handleCategoryImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editingCategory) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const MAX_WIDTH = 400;
-        const MAX_HEIGHT = 600;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          setEditingCategory(prev => ({ ...prev!, image: dataUrl }));
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    processImageFile(file, (dataUrl) => {
+      setEditingCategory(prev => ({ ...prev!, image: dataUrl }));
+    }, setFormMessage);
   };
 
   const handleSaveCategory = async () => {
@@ -404,7 +385,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <Upload size={16} /> Upload Photo
                       <input 
                         type="file" 
-                        accept="image/*" 
+                        accept="image/*,.heic,.heif" 
                         className="hidden" 
                         onChange={handleOfferImageUpload} 
                       />
@@ -469,9 +450,18 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
 
                   {/* Kannada Section */}
                   <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
+                    <div className="flex items-center justify-between"><h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#8B1C31]"></span> ಕನ್ನಡ (Kannada)
                     </h4>
+                    <button type="button" onClick={async () => {
+                      if (!editingOffer) return;
+                      const title = await translateText(editingOffer.en?.title || '');
+                      const desc = await translateText(editingOffer.en?.description || '');
+                      const btn = await translateText(editingOffer.en?.buttonText || '');
+                      setEditingOffer({...editingOffer, kn: { title, description: desc, buttonText: btn }});
+                    }} className="text-xs text-[#8B1C31] font-medium flex items-center gap-1 hover:underline">
+                      <Languages size={12}/> Auto-Translate
+                    </button></div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Title</label>
                       <input 
@@ -536,7 +526,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <Upload size={16} /> Upload Photo
                       <input 
                         type="file" 
-                        accept="image/*" 
+                        accept="image/*,.heic,.heif" 
                         className="hidden" 
                         onChange={handleCategoryImageUpload} 
                       />
@@ -584,9 +574,24 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
 
                   {/* Kannada Section */}
                   <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
+                    <div className="flex items-center justify-between"><h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#8B1C31]"></span> ಕನ್ನಡ (Kannada)
                     </h4>
+                    <button type="button" onClick={async () => {
+                      if (!editingCategory) return;
+                      const title = await translateText(editingCategory.en || '');
+                      
+                      // translate subcategories too if any
+                      let newSubcats = editingCategory.subcategories ? [...editingCategory.subcategories] : [];
+                      for (let i = 0; i < newSubcats.length; i++) {
+                        if (newSubcats[i].en && !newSubcats[i].kn) {
+                          newSubcats[i].kn = await translateText(newSubcats[i].en);
+                        }
+                      }
+                      setEditingCategory({...editingCategory, kn: title, subcategories: newSubcats});
+                    }} className="text-xs text-[#8B1C31] font-medium flex items-center gap-1 hover:underline">
+                      <Languages size={12}/> Auto-Translate
+                    </button></div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Category Name</label>
                       <input 
@@ -686,7 +691,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <Upload size={16} /> Upload Device Photo
                       <input 
                         type="file" 
-                        accept="image/*" 
+                        accept="image/*,.heic,.heif" 
                         className="hidden" 
                         onChange={handleImageUpload} 
                       />
@@ -715,7 +720,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       <Upload size={16} /> Upload Photos
                       <input 
                         type="file" 
-                        accept="image/*" 
+                        accept="image/*,.heic,.heif" 
                         multiple
                         className="hidden" 
                         onChange={handleAdditionalImageUpload} 
@@ -757,13 +762,16 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Price</label>
-                    <input 
-                      type="text" 
-                      value={editing.price}
-                      onChange={e => setEditing({...editing, price: e.target.value})}
-                      className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
-                      placeholder="₹..."
-                    />
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 font-medium pointer-events-none">₹</span>
+                      <input 
+                        type="text" 
+                        value={editing.price}
+                        onChange={e => setEditing({...editing, price: e.target.value})}
+                        className="w-full border border-gray-200 rounded-md pl-8 pr-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
+                        placeholder="0.00"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Stock</label>
@@ -773,32 +781,31 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       onChange={e => setEditing({...editing, stock: e.target.value ? parseInt(e.target.value) : 0})}
                       className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
                       placeholder="e.g. 10"
-                      min="0"
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                  <div className="flex gap-6">
+                <div className="mt-4 border border-gray-100 rounded-lg p-4 bg-white shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <input 
                         type="checkbox" 
                         id="productInOffer"
-                        checked={editing.inOffer || false} 
-                        onChange={e => setEditing({...editing, inOffer: e.target.checked})} 
-                        className="w-4 h-4 text-[#8B1C31] rounded border-gray-300 focus:ring-[#8B1C31]"
+                        checked={editing.inOffer || false}
+                        onChange={e => setEditing({...editing, inOffer: e.target.checked})}
+                        className="w-4 h-4 text-[#8B1C31] rounded focus:ring-[#8B1C31]"
                       />
                       <label htmlFor="productInOffer" className="text-sm font-medium text-gray-700 cursor-pointer">
-                        Product is in Offer
+                        Included in Regular Offer
                       </label>
                     </div>
                     <div className="flex items-center gap-3">
                       <input 
                         type="checkbox" 
                         id="productIsDailyOffer"
-                        checked={editing.isDailyOffer || false} 
-                        onChange={e => setEditing({...editing, isDailyOffer: e.target.checked})} 
-                        className="w-4 h-4 text-[#8B1C31] rounded border-gray-300 focus:ring-[#8B1C31]"
+                        checked={editing.isDailyOffer || false}
+                        onChange={e => setEditing({...editing, isDailyOffer: e.target.checked})}
+                        className="w-4 h-4 text-[#8B1C31] rounded focus:ring-[#8B1C31]"
                       />
                       <label htmlFor="productIsDailyOffer" className="text-sm font-medium text-gray-700 cursor-pointer">
                         Daily Offer
@@ -810,23 +817,29 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <div className="grid grid-cols-2 gap-4 mt-2">
                       <div>
                         <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Discount Rate</label>
-                        <input 
-                          type="text" 
-                          value={editing.discountRate || ''}
-                          onChange={e => setEditing({...editing, discountRate: e.target.value})}
-                          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-white"
-                          placeholder="e.g. 20% OFF"
-                        />
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            value={editing.discountRate || ''}
+                            onChange={e => setEditing({...editing, discountRate: e.target.value})}
+                            className="w-full border border-gray-200 rounded-md px-3 py-2 pr-8 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-white"
+                            placeholder="e.g. 20"
+                          />
+                          <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 font-medium pointer-events-none">%</span>
+                        </div>
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Offer Price</label>
-                        <input 
-                          type="text" 
-                          value={editing.offerPrice || ''}
-                          onChange={e => setEditing({...editing, offerPrice: e.target.value})}
-                          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-white"
-                          placeholder="e.g. ₹999"
-                        />
+                        <div className="relative">
+                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 font-medium pointer-events-none">₹</span>
+                          <input 
+                            type="text" 
+                            value={editing.offerPrice || ''}
+                            onChange={e => setEditing({...editing, offerPrice: e.target.value})}
+                            className="w-full border border-gray-200 rounded-md pl-8 pr-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-white"
+                            placeholder="0.00"
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -989,9 +1002,17 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
 
                   {/* Kannada Section */}
                   <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
+                    <div className="flex items-center justify-between"><h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#8B1C31]"></span> ಕನ್ನಡ (Kannada)
                     </h4>
+                    <button type="button" onClick={async () => {
+                      if (!editing) return;
+                      const name = await translateText(editing.en?.name || '');
+                      const desc = await translateText(editing.en?.description || '');
+                      setEditing({...editing, kn: { ...editing.kn, name, description: desc }});
+                    }} className="text-xs text-[#8B1C31] font-medium flex items-center gap-1 hover:underline">
+                      <Languages size={12}/> Auto-Translate
+                    </button></div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-2 font-medium">Product Name</label>
                       <input 
@@ -1057,7 +1078,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       </div>
                       <div>
                         <h4 className="font-medium text-[#1a1a1a] font-serif text-lg leading-tight mb-1">{p.en?.name}</h4>
-                        <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">{p.price} <span className="mx-2 text-gray-300">|</span> {p.en?.badge} {p.en?.subcategory ? ` / ${p.en?.subcategory}` : ''}</p>
+                        <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">{formatPrice(p.price)} <span className="mx-2 text-gray-300">|</span> {p.en?.badge} {p.en?.subcategory ? ` / ${p.en?.subcategory}` : ''}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
