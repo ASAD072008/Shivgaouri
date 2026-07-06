@@ -832,7 +832,7 @@ const options = {
                <span>{waNumber}</span>
              </div>
           </div>
-           <div className="w-full md:flex-1 relative aspect-[4/3] md:aspect-[3/2] bg-[#EAE5DB]/10 overflow-hidden rounded-md md:rounded-none">
+           <div className="w-full h-[300px] md:h-auto md:aspect-[3/2] md:flex-1 relative bg-[#EAE5DB]/10 overflow-hidden rounded-lg md:rounded-none mt-8 md:mt-0 shadow-xl">
              <img src="/shivgouri-team.png" alt="Shivgouri Team" className="absolute inset-0 w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
           </div>
         </div>
