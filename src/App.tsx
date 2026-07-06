@@ -601,7 +601,7 @@ const options = {
                      <img draggable="false" referrerPolicy="no-referrer" src={cat.image} alt={cat.en} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000" />
                    ) : (
                      <div className="w-full h-full flex items-center justify-center bg-[#3C101B] text-white/20">
-                       <img src="/shivgouri-team.png" alt="Shivgouri Team" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+                       <img src="/team-shivgouri.png" alt="Shivgouri Team" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
                      </div>
                    )}
                    <div className="absolute inset-0 bg-gradient-to-t from-[#3C101B]/90 via-[#3C101B]/20 to-transparent pointer-events-none" />
@@ -833,7 +833,7 @@ const options = {
              </div>
           </div>
            <div className="w-full h-[300px] md:h-auto md:aspect-[3/2] md:flex-1 relative bg-[#EAE5DB]/10 overflow-hidden rounded-lg md:rounded-none mt-8 md:mt-0 shadow-xl">
-             <img src="/shivgouri-team.png" alt="Shivgouri Team" className="absolute inset-0 w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+             <img src="/team-shivgouri.png" alt="Shivgouri Team" className="absolute inset-0 w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
           </div>
         </div>
       </section>
@@ -1000,7 +1000,7 @@ const options = {
                   <img referrerPolicy="no-referrer" src={selectedProduct.image} alt={(selectedProduct[lang] || selectedProduct.en)?.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[#3C101B]/20">
-                    <img src="/shivgouri-team.png" alt="Shivgouri Team" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+                    <img src="/team-shivgouri.png" alt="Shivgouri Team" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
                   </div>
                 )}
               </div>
