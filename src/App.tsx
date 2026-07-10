@@ -21,7 +21,7 @@ const content = {
   en: {
     nav: { home: 'Home', collection: 'Collection', about: 'About', contact: 'Contact' },
     hero: { pre: 'Celebrate the', title1: 'Essence of', title2: 'Womanhood', desc: 'with Timeless Fashion', explore: 'Shop Collection' },
-    collection: { title: 'The Shivgouri Collection', desc: 'Our curated selection of premium silks, organzas, and cottons, ethically sourced directly from master weavers.', viewAll: 'View All', orderBtn: 'Order via WhatsApp', filterAll: 'All' },
+    collection: { title: 'The Shivgouri Collection', desc: 'Our curated selection of premium silks, organzas, and cottons, ethically sourced directly from master weavers.', viewAll: 'View All', orderBtn: 'Order Now', filterAll: 'All' },
     about: { title: 'Our Heritage', desc: 'Shivgouri is more than a boutique; it is an homage to the intricate craftsmanship of generations past. Every thread we select is a testament to the unparalleled skill of our artisans.' },
     footer: { address: 'Shivgouri Silk Sarees', city: 'Gokak, Karnataka', visit: 'Visit our physical store to experience the textures in person, or order directly online via our dedicated WhatsApp concierge.', rights: 'All rights reserved.' },
     checkout: { title: 'Before you checkout', rule1: 'Parcel opening video is strictly required for any claims.', rule2: ['Please enter correct address and number. ', '₹70 extra charge', ' if details are wrong.'], rule3: 'Check the size properly before ordering.', rule4: 'Please read our return and exchange policy before placing the order.', btn: 'Confirm and Checkout' },
@@ -30,13 +30,13 @@ const content = {
     collectionSection: { tag: 'The Noteworthy', title: 'Shivgouri by Signatures', desc: 'Lustrous silks, intricate zari — every piece chosen at the source and held to one standard. Finest. Reserved and preserved.' },
     gallery: { tag: 'Visit the Gallery', title: 'Experience the legacy of Shivgouri.' },
     newsletter: { tag: 'Subscribe to our emails', title: 'Join Our Journey', desc: 'Be the first to explore special offers, exclusive discounts, and all our latest updates.', btn: 'Subscribe' },
-    cart: { title: 'Your Cart', empty: 'Your cart is empty', checkout: 'Checkout via WhatsApp', total: 'Total' },
+    cart: { title: 'Your Cart', empty: 'Your cart is empty', checkout: 'Proceed to Checkout', total: 'Total' },
     emptyProducts: 'No products found in this category.'
   },
   kn: {
     nav: { home: 'ಮುಖಪುಟ', collection: 'ಸಂಗ್ರಹ', about: 'ಬಗ್ಗೆ', contact: 'ಸಂಪರ್ಕ' },
     hero: { pre: 'ಆಚರಿಸಿ', title1: 'ಸ್ತ್ರೀತ್ವದ', title2: 'ಸಾರವನ್ನು', desc: 'ಸಮಯಾತೀತ ಫ್ಯಾಷನ್‌ನೊಂದಿಗೆ', explore: 'ಸಂಗ್ರಹ ಖರೀದಿಸಿ' },
-    collection: { title: 'ಶಿವಗೌರಿ ಸಂಗ್ರಹ', desc: 'ನುರಿತ ನೇಕಾರರಿಂದ ನೇರವಾಗಿ ಪಡೆದ ಪ್ರೀಮಿಯಂ ರೇಷ್ಮೆ, ಆರ್ಗನ್ಜಾ ಮತ್ತು ಕಾಟನ್‌ಗಳ ನಮ್ಮ ವಿಶೇಷ ಆಯ್ಕೆ.', viewAll: 'ಎಲ್ಲ ವೀಕ್ಷಿಸಿ', orderBtn: 'ವಾಟ್ಸಾಪ್ ಮೂಲಕ ಆರ್ಡರ್ ಮಾಡಿ', filterAll: 'ಎಲ್ಲ' },
+    collection: { title: 'ಶಿವಗೌರಿ ಸಂಗ್ರಹ', desc: 'ನುರಿತ ನೇಕಾರರಿಂದ ನೇರವಾಗಿ ಪಡೆದ ಪ್ರೀಮಿಯಂ ರೇಷ್ಮೆ, ಆರ್ಗನ್ಜಾ ಮತ್ತು ಕಾಟನ್‌ಗಳ ನಮ್ಮ ವಿಶೇಷ ಆಯ್ಕೆ.', viewAll: 'ಎಲ್ಲ ವೀಕ್ಷಿಸಿ', orderBtn: 'ಈಗಲೇ ಆರ್ಡರ್ ಮಾಡಿ', filterAll: 'ಎಲ್ಲ' },
     about: { title: 'ನಮ್ಮ ಪರಂಪರೆ', desc: 'ಶಿವಗೌರಿ ಕೇವಲ ಒಂದು ಮಳಿಗೆಯಲ್ಲ; ಇದು ಹಿಂದಿನ ತಲೆಮಾರುಗಳ ಸಂಕೀರ್ಣ ಕರಕುಶಲತೆಗೆ ಸಲ್ಲಿಸುವ ಗೌರವ. ನಾವು ಆಯ್ಕೆ ಮಾಡುವ ಪ್ರತಿಯೊಂದು ದಾರವೂ ನಮ್ಮ ಕುಶಲಕರ್ಮಿಗಳ ಅಪ್ರತಿಮ ಕೌಶಲ್ಯಕ್ಕೆ ಸಾಕ್ಷಿಯಾಗಿದೆ.' },
     footer: { address: 'ಶಿವಗೌರಿ ಸಿಲ್ಕ್ ಸೀರೆಗಳು', city: 'ಗೋಕಾಕ್, ಕರ್ನಾಟಕ', visit: 'ಬಟ್ಟೆಗಳನ್ನು ಖುದ್ದಾಗಿ ನೋಡಲು ನಮ್ಮ ಮಳಿಗೆಗೆ ಭೇಟಿ ನೀಡಿ, ಅಥವಾ ವಾಟ್ಸಾಪ್ ಮೂಲಕ ನೇರವಾಗಿ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಆರ್ಡರ್ ಮಾಡಿ.', rights: 'ಎಲ್ಲ ಹಕ್ಕುಗಳನ್ನು ಕಾಯ್ದಿರಿಸಲಾಗಿದೆ.' },
     checkout: { title: 'ನೀವು ಚೆಕ್ ಔಟ್ ಮಾಡುವ ಮೊದಲು', rule1: 'ಯಾವುದೇ ಕ್ಲೈಮ್‌ಗಳಿಗಾಗಿ ಪಾರ್ಸೆಲ್ ತೆರೆಯುವ ವೀಡಿಯೊ ಕಡ್ಡಾಯವಾಗಿದೆ.', rule2: ['ದಯವಿಟ್ಟು ಸರಿಯಾದ ವಿಳಾಸ ಮತ್ತು ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ. ವಿವರಗಳು ತಪ್ಪಾಗಿದ್ದರೆ ', '₹70 ಹೆಚ್ಚುವರಿ ಶುಲ್ಕ', '.'], rule3: 'ಆರ್ಡರ್ ಮಾಡುವ ಮೊದಲು ಗಾತ್ರವನ್ನು ಸರಿಯಾಗಿ ಪರಿಶೀಲಿಸಿ.', rule4: 'ಆರ್ಡರ್ ಮಾಡುವ ಮೊದಲು ದಯವಿಟ್ಟು ನಮ್ಮ ರಿಟರ್ನ್ ಮತ್ತು ಎಕ್ಸ್‌ಚೇಂಜ್ ಪಾಲಿಸಿಯನ್ನು ಓದಿ.', btn: 'ಖಚಿತಪಡಿಸಿ ಮತ್ತು ಚೆಕ್‌ಔಟ್ ಮಾಡಿ' },
@@ -45,13 +45,13 @@ const content = {
     collectionSection: { tag: 'ಗಮನಾರ್ಹವಾದವು', title: 'ಶಿವಗೌರಿಯ ಸಿಗ್ನೇಚರ್ಸ್', desc: 'ಹೊಳಪಿನ ರೇಷ್ಮೆ, ಸಂಕೀರ್ಣ ಜರಿ — ಪ್ರತಿಯೊಂದು ತುಣುಕನ್ನು ಮೂಲದಲ್ಲಿಯೇ ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಒಂದೇ ಗುಣಮಟ್ಟಕ್ಕೆ ಒಳಪಡಿಸಲಾಗಿದೆ. ಅತ್ಯುತ್ತಮವಾದವು.' },
     gallery: { tag: 'ಗ್ಯಾಲರಿಗೆ ಭೇಟಿ ನೀಡಿ', title: 'ಶಿವಗೌರಿಯ ಪರಂಪರೆಯನ್ನು ಅನುಭವಿಸಿ.' },
     newsletter: { tag: 'ನಮ್ಮ ಇಮೇಲ್‌ಗಳಿಗೆ ಚಂದಾದಾರರಾಗಿ', title: 'ನಮ್ಮ ಪ್ರಯಾಣದಲ್ಲಿ ಸೇರಿಕೊಳ್ಳಿ', desc: 'ವಿಶೇಷ ಕೊಡುಗೆಗಳು, ರಿಯಾಯಿತಿಗಳು ಮತ್ತು ನಮ್ಮ ಇತ್ತೀಚಿನ ನವೀಕರಣಗಳನ್ನು ಮೊದಲು ಅನ್ವೇಷಿಸಲು ಚಂದಾದಾರರಾಗಿ.', btn: 'ಚಂದಾದಾರರಾಗಿ' },
-    cart: { title: 'ನಿಮ್ಮ ಕಾರ್ಟ್', empty: 'ನಿಮ್ಮ ಕಾರ್ಟ್ ಖಾಲಿಯಾಗಿದೆ', checkout: 'ವಾಟ್ಸಾಪ್ ಮೂಲಕ ಚೆಕ್‌ಔಟ್ ಮಾಡಿ', total: 'ಒಟ್ಟು' },
+    cart: { title: 'ನಿಮ್ಮ ಕಾರ್ಟ್', empty: 'ನಿಮ್ಮ ಕಾರ್ಟ್ ಖಾಲಿಯಾಗಿದೆ', checkout: 'ಚೆಕ್ಔಟ್', total: 'ಒಟ್ಟು' },
     emptyProducts: 'ಈ ವಿಭಾಗದಲ್ಲಿ ಯಾವುದೇ ಉತ್ಪನ್ನಗಳು ಕಂಡುಬಂದಿಲ್ಲ.'
   },
   hi: {
     nav: { home: 'होम', collection: 'संग्रह', about: 'हमारे बारे में', contact: 'संपर्क' },
     hero: { pre: 'मनाएं', title1: 'नारीत्व का', title2: 'सार', desc: 'कालातीत फैशन के साथ', explore: 'संग्रह खरीदें' },
-    collection: { title: 'शिवगौरी संग्रह', desc: 'हमारे मास्टर बुनकरों से सीधे नैतिक रूप से प्राप्त प्रीमियम रेशम, ऑर्गेना, और कपास का विशेष चयन।', viewAll: 'सभी देखें', orderBtn: 'WhatsApp के माध्यम से ऑर्डर करें', filterAll: 'सभी' },
+    collection: { title: 'शिवगौरी संग्रह', desc: 'हमारे मास्टर बुनकरों से सीधे नैतिक रूप से प्राप्त प्रीमियम रेशम, ऑर्गेना, और कपास का विशेष चयन।', viewAll: 'सभी देखें', orderBtn: 'अभी ऑर्डर करें', filterAll: 'सभी' },
     about: { title: 'हमारी विरासत', desc: 'शिवगौरी एक बुटीक से कहीं अधिक है; यह पिछली पीढ़ियों की जटिल शिल्प कौशल को एक श्रद्धांजलि है। हमारे द्वारा चुना गया प्रत्येक धागा हमारे कारीगरों के अद्वितीय कौशल का प्रमाण है।', },
     footer: { address: 'शिवगौरी सिल्क साड़ी', city: 'गोकक, कर्नाटक', visit: 'बनावट का व्यक्तिगत रूप से अनुभव करने के लिए हमारे स्टोर पर आएं, या हमारे समर्पित WhatsApp के माध्यम से सीधे ऑनलाइन ऑर्डर करें।', rights: 'सभी अधिकार सुरक्षित।' },
     checkout: { title: 'चेकआउट करने से पहले', rule1: 'किसी भी दावे के लिए पार्सल खोलने का वीडियो सख्त रूप से आवश्यक है।', rule2: ['कृपया सही पता और नंबर दर्ज करें। यदि विवरण गलत हैं तो ', '₹70 अतिरिक्त शुल्क', '।'], rule3: 'ऑर्डर करने से पहले आकार की ठीक से जांच करें।', rule4: 'कृपया ऑर्डर देने से पहले हमारी रिटर्न और एक्सचेंज नीति पढ़ें।', btn: 'पुष्टि करें और चेकआउट करें' },
@@ -60,7 +60,7 @@ const content = {
     collectionSection: { tag: 'उल्लेखनीय', title: 'शिवगौरी सिग्नेचर्स', desc: 'चमकदार रेशम, जटिल ज़री — हर एक पीस को स्रोत पर चुना गया और एक ही मानक पर रखा गया। बेहतरीन।' },
     gallery: { tag: 'गैलरी में आएं', title: 'शिवगौरी की विरासत का अनुभव करें।' },
     newsletter: { tag: 'हमारे ईमेल की सदस्यता लें', title: 'हमारी यात्रा में शामिल हों', desc: 'विशेष प्रस्तावों, अनन्य छूटों और हमारे सभी नवीनतम अपडेटों का पता लगाने वाले पहले व्यक्ति बनें।', btn: 'सदस्यता लें' },
-    cart: { title: 'आपका कार्ट', empty: 'आपका कार्ट खाली है', checkout: 'व्हाट्सएप के माध्यम से चेकआउट करें', total: 'कुल' },
+    cart: { title: 'आपका कार्ट', empty: 'आपका कार्ट खाली है', checkout: 'चेकआउट के लिए आगे बढ़ें', total: 'कुल' },
     emptyProducts: 'इस श्रेणी में कोई उत्पाद नहीं मिला।'
   }
 };
@@ -84,6 +84,7 @@ const formatPrice = (p: string | undefined) => {
 
 export default function App() {
   const [lang, setLang] = useState<'en' | 'kn' | 'hi'>('en');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [user, setUser] = React.useState<any>(null);
@@ -119,6 +120,7 @@ export default function App() {
   const [showCheckoutWarning, setShowCheckoutWarning] = useState(false);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({ name: '', mobileNumber: '', alternateNumber: '', address: '', landmark: '', city: '', district: '', pincode: '' });
   const [orders, setOrders] = useState<Order[]>([]);
 
@@ -211,7 +213,7 @@ export default function App() {
         setShowCheckoutForm(false);
         setIsCartOpen(false);
         setShowPaymentOptions(false);
-        alert(method === 'online' ? 'Online payment successful! Order placed.' : 'Order placed successfully! Your order will be shipped via Cash on Delivery.');
+        setShowOrderSuccess(true);
       } catch (e: any) {
         console.error(e);
         alert(e.message || 'Error saving order, please contact support.');
@@ -356,7 +358,7 @@ const options = {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <div className="flex justify-between items-center h-16 relative">
             <div className="flex-1 flex items-center justify-start">
-              <button className="md:hidden text-white hover:opacity-50 transition-opacity">
+              <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden text-white hover:opacity-50 transition-opacity">
                 <Menu size={24} strokeWidth={1.5} />
               </button>
             </div>
@@ -418,6 +420,28 @@ const options = {
           </div>
         </div>
       </nav>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] flex">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+          <div className="relative w-[80%] max-w-sm bg-[#3C101B] h-full flex flex-col p-6 animate-in slide-in-from-left duration-300">
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="absolute right-4 top-4 text-white hover:opacity-50"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="font-logo text-2xl tracking-[0.1em] text-white uppercase mb-12 mt-4">Shivgouri</h2>
+            <div className="flex flex-col gap-6 text-white text-sm uppercase tracking-widest">
+              <a href="#" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#A28B55] transition-colors">{t.nav.home}</a>
+              <a href="#collection" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#A28B55] transition-colors">{t.nav.collection}</a>
+              <a href="#about" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#A28B55] transition-colors">{t.nav.about}</a>
+              <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#A28B55] transition-colors">{t.nav.contact}</a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="relative min-h-[70vh] md:min-h-[85vh] flex items-center bg-[#F7F4EF] overflow-hidden">
@@ -942,7 +966,7 @@ const options = {
              </button>
            </div>
 
-           <div className="flex flex-col sm:flex-row justify-between items-center text-[10px] uppercase tracking-widest text-white/30">
+           <div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-4 sm:gap-12 text-[10px] uppercase tracking-widest text-white/30 pb-20 md:pb-0">
              <p>&copy; {new Date().getFullYear()} Shivgouri Silk and Saris.</p>
              <button onClick={() => setIsAdminOpen(true)} className="hover:text-white mt-4 sm:mt-0 flex items-center gap-2 transition-colors">
                Admin <Lock size={12} />
@@ -1372,6 +1396,28 @@ const options = {
         </div>
       )}
 
+      {/* Order Success Popup */}
+      {showOrderSuccess && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowOrderSuccess(false)}></div>
+          <div className="relative bg-[#FAFAFA] w-full max-w-md rounded-xl shadow-2xl p-8 text-center animate-in fade-in zoom-in duration-300">
+            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ShieldCheck size={32} />
+            </div>
+            <h2 className="text-2xl font-serif text-[#3C101B] mb-4">Order Confirmed!</h2>
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              Thank you for shopping with Shivgouri. Your product will be shipped within <strong className="text-[#3C101B]">5-7 business days</strong>.
+            </p>
+            <button 
+              onClick={() => setShowOrderSuccess(false)}
+              className="w-full bg-[#3C101B] text-white py-3 text-[12px] uppercase tracking-widest font-bold hover:bg-[#A28B55] transition-colors rounded-md shadow-lg"
+            >
+              Continue Shopping
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Offer Popup */}
 
       {showOffer && offers.filter(o => o.isActive).length > 0 && (
@@ -1408,10 +1454,10 @@ const options = {
       {/* Floating Call Button */}
       <a
         href="tel:9620779955"
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#3C101B] text-white rounded-full flex items-center justify-center shadow-2xl hover:bg-[#A28B55] transition-colors hover:scale-110 duration-300"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#3C101B] text-white rounded-full flex items-center justify-center shadow-2xl hover:bg-[#A28B55] transition-colors hover:scale-110 duration-300 animate-bounce"
         aria-label="Call Shop"
       >
-        <Phone size={24} className="animate-[wiggle_1s_ease-in-out_infinite]" />
+        <Phone size={24} />
       </a>
     </div>
   );
