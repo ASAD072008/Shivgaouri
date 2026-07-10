@@ -9,7 +9,8 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck, Phone, Search } from 'lucide-react';
+import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck, Phone, Search, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Product, Offer, Order } from './types';
 import AdminPanel from './components/AdminPanel';
 import LoginModal from './components/LoginModal';
@@ -84,6 +85,11 @@ const formatPrice = (p: string | undefined) => {
 
 export default function App() {
   const [lang, setLang] = useState<'en' | 'kn' | 'hi'>('en');
+  const [toastMessage, setToastMessage] = useState<{show: boolean, msg: string}>({show: false, msg: ''});
+  const showToast = (msg: string) => {
+    setToastMessage({show: true, msg});
+    setTimeout(() => setToastMessage({show: false, msg: ''}), 4000);
+  };
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -124,6 +130,19 @@ export default function App() {
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({ name: '', mobileNumber: '', alternateNumber: '', address: '', landmark: '', city: '', district: '', pincode: '' });
   const [orders, setOrders] = useState<Order[]>([]);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+
+  useEffect(() => {
+    if (selectedProduct?.reviews && selectedProduct.reviews.length > 1) {
+      const timer = setInterval(() => {
+        setCurrentReviewIndex((prev) => (prev + 1) % selectedProduct.reviews.length);
+      }, 3000);
+      return () => clearInterval(timer);
+    }
+  }, [selectedProduct]);
 
   useEffect(() => {
     async function loadData() {
@@ -160,6 +179,33 @@ export default function App() {
   const waNumber = '918329732432';
 
   const t = content[lang];
+
+  const handleSubmitReview = async () => {
+    if (!selectedProduct || !reviewName.trim() || !reviewText.trim()) return;
+    const newReview = {
+      id: Date.now().toString(),
+      name: reviewName,
+      rating: reviewRating,
+      text: reviewText,
+      date: Date.now()
+    };
+    const updatedProduct = {
+      ...selectedProduct,
+      reviews: [...(selectedProduct.reviews || []), newReview]
+    };
+    try {
+      const { saveProduct } = await import('./firebase');
+      await saveProduct(updatedProduct);
+      setSelectedProduct(updatedProduct);
+      setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+      setReviewName('');
+      setReviewText('');
+      setReviewRating(5);
+    } catch (e) {
+      console.error("Error saving review", e);
+      alert("Failed to save review");
+    }
+  };
 
   const handleCheckout = () => {
     setShowCheckoutWarning(false);
@@ -363,6 +409,12 @@ const options = {
 
   return (
     <div className="min-h-screen bg-[#F7F4EF] font-sans text-[#3C101B] selection:bg-[#3C101B] selection:text-white overflow-x-hidden">
+      {toastMessage.show && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] bg-[#3C101B] text-white px-6 py-3 rounded-md shadow-2xl animate-in fade-in slide-in-from-top-4 flex items-center gap-3">
+          <ShieldCheck size={18} className="text-[#A28B55]" />
+          <span className="text-xs uppercase tracking-widest font-medium">{toastMessage.msg}</span>
+        </div>
+      )}
       {/* Navigation Bar */}
       <nav className="bg-[#3C101B] text-white w-full">
         {/* Top bar */}
@@ -557,10 +609,22 @@ const options = {
                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                          {product.stock !== undefined && product.stock <= 0 ? (
                            <button 
-                             disabled
-                             className="w-full bg-white/20 backdrop-blur-sm text-white/50 py-3 text-[10px] uppercase tracking-widest font-medium cursor-not-allowed border border-white/10"
+                             onClick={async (e) => {
+                               e.stopPropagation();
+                               try {
+                                 const updatedProduct = { ...product, restockRequests: (product.restockRequests || 0) + 1 };
+                                 const { saveProduct } = await import('./firebase');
+                                 await saveProduct(updatedProduct);
+                                 setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+                                 showToast("Thanks for your request! We will try to restock this soon.");
+                               } catch (err) {
+                                 console.error(err);
+                                 alert("Failed to send request. Please try again.");
+                               }
+                             }}
+                             className="w-full bg-[#8B1C31] text-white py-3 text-[10px] uppercase tracking-widest font-bold hover:bg-[#6A1525] transition-colors flex items-center justify-center gap-2"
                            >
-                             Out of Stock
+                             <RefreshCcw size={14} /> Request Restock
                            </button>
                          ) : (
                            <button 
@@ -810,10 +874,22 @@ const options = {
                        <div className="absolute bottom-4 left-4 right-4 translate-y-8 opacity-0 group-hover/item:translate-y-0 group-hover/item:opacity-100 transition-all duration-300">
                          {product.stock !== undefined && product.stock <= 0 ? (
                            <button 
-                             disabled
-                             className="w-full bg-gray-200 text-gray-500 py-3 text-[10px] uppercase tracking-widest font-medium cursor-not-allowed"
+                             onClick={async (e) => {
+                               e.stopPropagation();
+                               try {
+                                 const updatedProduct = { ...product, restockRequests: (product.restockRequests || 0) + 1 };
+                                 const { saveProduct } = await import('./firebase');
+                                 await saveProduct(updatedProduct);
+                                 setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+                                 showToast("Thanks for your request! We will try to restock this soon.");
+                               } catch (err) {
+                                 console.error(err);
+                                 alert("Failed to send request. Please try again.");
+                               }
+                             }}
+                             className="w-full bg-[#8B1C31] text-white py-3 text-[10px] uppercase tracking-widest font-bold hover:bg-[#6A1525] transition-colors flex items-center justify-center gap-2 shadow-lg"
                            >
-                             Out of Stock
+                             <RefreshCcw size={14} /> Request Restock
                            </button>
                          ) : (
                            <button 
@@ -1138,13 +1214,94 @@ const options = {
                 </div>
               )}
 
+              {/* Reviews Section */}
+              <div className="mb-8 border-t border-[#3C101B]/10 pt-8">
+                <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#3C101B] mb-6 flex items-center gap-2">
+                  Customer Reviews
+                </h4>
+                <div className="mb-8 relative" style={{ minHeight: '140px' }}>
+                  {selectedProduct.reviews && selectedProduct.reviews.length > 0 ? (
+                    <div className="relative w-full overflow-hidden h-[140px]">
+                      <AnimatePresence mode="wait">
+                        {selectedProduct.reviews.map((review, idx) => idx === (currentReviewIndex % selectedProduct.reviews.length) && (
+                          <motion.div
+                            key={review.id}
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -50 }}
+                            transition={{ duration: 0.5 }}
+                            className="absolute inset-0 bg-white p-4 rounded-lg shadow-sm border border-[#3C101B]/5 overflow-y-auto custom-scrollbar"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-bold text-sm text-[#3C101B]">{review.name}</span>
+                              <div className="flex text-[#A28B55]">
+                                {[1, 2, 3, 4, 5].map(star => (
+                                  <Star key={star} size={12} fill={star <= review.rating ? "currentColor" : "none"} className={star <= review.rating ? "text-[#A28B55]" : "text-gray-300"} />
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{review.text}</p>
+                            <span className="text-[10px] text-gray-400 uppercase tracking-widest">{new Date(review.date).toLocaleDateString()}</span>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No reviews yet. Be the first to review!</p>
+                  )}
+                </div>
+                
+                <div className="bg-[#F7F4EF] p-6 rounded-lg border border-[#3C101B]/5">
+                  <h5 className="text-[10px] uppercase tracking-widest text-[#3C101B]/50 mb-4 border-b border-[#3C101B]/10 pb-2">Add Your Review</h5>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[#3C101B]/70 mb-1">Name</label>
+                      <input type="text" value={reviewName} onChange={e => setReviewName(e.target.value)} className="w-full bg-white border border-[#3C101B]/10 text-[#3C101B] px-3 py-2 rounded-sm focus:outline-none focus:border-[#3C101B]/30 text-sm" placeholder="Your name" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[#3C101B]/70 mb-1">Rating</label>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button key={star} onClick={() => setReviewRating(star)} className="focus:outline-none">
+                            <Star size={18} fill={star <= reviewRating ? "currentColor" : "none"} className={star <= reviewRating ? "text-[#A28B55]" : "text-gray-300 hover:text-[#A28B55]/50"} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[#3C101B]/70 mb-1">Review</label>
+                      <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} className="w-full bg-white border border-[#3C101B]/10 text-[#3C101B] px-3 py-2 rounded-sm focus:outline-none focus:border-[#3C101B]/30 text-sm min-h-[80px]" placeholder="Share your experience..."></textarea>
+                    </div>
+                    <button 
+                      onClick={handleSubmitReview}
+                      disabled={!reviewName.trim() || !reviewText.trim()}
+                      className="bg-[#3C101B] text-white px-4 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-[#A28B55] transition-colors rounded-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Submit Review
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="mt-auto pt-8">
                 {selectedProduct.stock !== undefined && selectedProduct.stock <= 0 ? (
                   <button 
-                    disabled
-                    className="w-full bg-gray-300 text-gray-500 py-4 text-xs uppercase tracking-widest font-bold cursor-not-allowed shadow-inner"
+                    onClick={async () => {
+                      try {
+                        const updatedProduct = { ...selectedProduct, restockRequests: (selectedProduct.restockRequests || 0) + 1 };
+                        const { saveProduct } = await import('./firebase');
+                        await saveProduct(updatedProduct);
+                        setSelectedProduct(updatedProduct);
+                        setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+                        showToast("Thanks for your request! We will try to restock this soon.");
+                      } catch (e) {
+                        console.error(e);
+                        alert("Failed to send request. Please try again.");
+                      }
+                    }}
+                    className="w-full bg-[#8B1C31] text-white py-4 text-xs uppercase tracking-widest font-bold hover:bg-[#6A1525] transition-colors shadow-lg flex items-center justify-center gap-2"
                   >
-                    Out of Stock
+                    <RefreshCcw size={16} /> Request Restock
                   </button>
                 ) : (
                   <button 

@@ -17,6 +17,8 @@ export type Offer = {
   hi?: { title: string; description: string; buttonText: string };
 };
 
+export type Review = { id: string; name: string; rating: number; text: string; date: number; };
+
 export type Product = {
   id: number;
   price: string;
@@ -34,6 +36,8 @@ export type Product = {
   offerPrice?: string;
   stock?: number;
   specifications?: { key: string; value: string }[];
+  reviews?: Review[];
+  restockRequests?: number;
 };
 
 export type Order = {

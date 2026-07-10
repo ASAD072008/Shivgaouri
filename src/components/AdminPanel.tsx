@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import heic2any from 'heic2any';
-import { X, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, Layers, Box, Languages } from 'lucide-react';
+import { X, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, Layers, Box, Languages, RefreshCcw } from 'lucide-react';
 import { Product, Category, Offer, Order } from '../types';
 import { saveProduct, deleteProduct, saveCategory, deleteCategory, saveOffer, deleteOffer, fetchOrders, saveOrder, deleteOrder } from '../firebase';
 
@@ -91,7 +91,7 @@ const translateText = async (text: string) => {
 };
 
 export default function AdminPanel({ products, setProducts, categories, setCategories, offers, setOffers, onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'offers' | 'orders'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'offers' | 'orders' | 'restocks'>('products');
   const [editing, setEditing] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
@@ -315,10 +315,10 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#f8f6f2]">
-          <div className="flex items-center gap-6">
-            <h2 className="font-serif text-2xl text-[#8B1C31] italic tracking-tight hidden sm:block">Store Management</h2>
+          <div className="flex items-center gap-4 sm:gap-6 flex-1 min-w-0">
+            <h2 className="font-serif text-2xl text-[#8B1C31] italic tracking-tight hidden sm:block flex-shrink-0">Store Management</h2>
             {!editing && !editingCategory && !editingOffer && (
-              <div className="flex overflow-x-auto gap-2 bg-white rounded-lg p-1 shadow-sm border border-gray-100 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] max-w-[calc(100vw-120px)] md:max-w-none">
+              <div className="flex overflow-x-auto gap-2 bg-white rounded-lg p-1 shadow-sm border border-gray-100 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] max-w-[calc(100vw-120px)] flex-1 min-w-0">
                 <button
                   onClick={() => setActiveTab('products')}
                   className={`whitespace-nowrap flex-shrink-0 px-4 py-1.5 text-xs font-medium tracking-widest uppercase rounded-md transition-colors flex items-center gap-2 ${
@@ -351,10 +351,18 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                 >
                   <Box size={14} /> Orders
                 </button>
+                <button
+                  onClick={() => setActiveTab('restocks')}
+                  className={`whitespace-nowrap flex-shrink-0 px-4 py-1.5 text-xs font-medium tracking-widest uppercase rounded-md transition-colors flex items-center gap-2 ${
+                    activeTab === 'restocks' ? 'bg-[#8B1C31] text-white' : 'text-gray-500 hover:text-[#1a1a1a]'
+                  }`}
+                >
+                  <RefreshCcw size={14} /> Restock Requests
+                </button>
               </div>
             )}
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors text-gray-500">
+          <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors text-gray-500 flex-shrink-0 ml-4 z-10">
             <X size={24} />
           </button>
         </div>
@@ -1036,6 +1044,32 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
 
               <div className="pt-6">
                 
+
+                {editing.reviews && editing.reviews.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Manage Reviews</label>
+                    <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                      {editing.reviews.map((r, i) => (
+                        <div key={r.id} className="flex justify-between items-start border border-gray-100 p-3 rounded-md bg-white">
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">{r.name} - {r.rating} Stars</p>
+                            <p className="text-xs text-gray-600 mt-1">{r.text}</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setEditing({...editing, reviews: editing.reviews.filter(rev => rev.id !== r.id)});
+                            }}
+                            className="text-red-500 hover:bg-red-50 p-2 rounded-md transition-colors"
+                            title="Remove Review"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {formMessage && (
                   <div className={`p-3 mb-4 rounded-md text-sm ${formMessage.type === 'error' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-600 border border-green-200'}`}>
                     {formMessage.text}
@@ -1263,6 +1297,51 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     <p className="text-xs mt-1">Create a special offer popup for your customers.</p>
                   </div>
                 )}
+              </div>
+            </div>
+          ) : activeTab === 'restocks' ? (
+            <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <p className="text-sm text-gray-500 max-w-md leading-relaxed">
+                  View products that customers have requested to be restocked.
+                </p>
+              </div>
+
+              <div className="grid gap-3">
+                {products.filter(p => (p.restockRequests || 0) > 0).length === 0 ? (
+                  <div className="text-center py-16 text-gray-400">No restock requests yet.</div>
+                ) : products.filter(p => (p.restockRequests || 0) > 0).sort((a, b) => (b.restockRequests || 0) - (a.restockRequests || 0)).map(p => (
+                  <div key={p.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-xl bg-white hover:border-gray-300 transition-colors">
+                    <div className="flex items-center gap-5">
+                      <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        {p.image ? (
+                          <img referrerPolicy="no-referrer" src={p.image} alt={p.en?.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={20}/></div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-[#1a1a1a] font-serif text-lg leading-tight mb-1">{p.en?.name}</h4>
+                        <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">Stock: {p.stock || 0} <span className="mx-2">|</span> {p.en?.badge}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 sm:mt-0 flex flex-col items-end">
+                      <div className="bg-[#F7F4EF] text-[#8B1C31] px-4 py-2 rounded-lg flex items-center gap-3">
+                        <span className="text-xs font-bold uppercase tracking-widest">Requests</span>
+                        <span className="text-2xl font-serif font-bold">{p.restockRequests}</span>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setEditing({...p, stock: 1});
+                          setActiveTab('products');
+                        }}
+                        className="mt-2 text-[10px] uppercase tracking-widest font-bold text-[#8B1C31] hover:underline"
+                      >
+                        Restock Now
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ) : activeTab === 'orders' ? (
