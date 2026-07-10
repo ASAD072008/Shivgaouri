@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck, Phone } from 'lucide-react';
+import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck, Phone, Search } from 'lucide-react';
 import { Product, Offer, Order } from './types';
 import AdminPanel from './components/AdminPanel';
 import LoginModal from './components/LoginModal';
@@ -105,6 +105,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
   const [activeSection, setActiveSection] = useState<string>('Saree');
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [activeSubcategory, setActiveSubcategory] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
@@ -334,7 +335,17 @@ const options = {
     const matchesSection = pSection === activeSection;
     const matchesCategory = activeCategory === 'All' || p.en?.badge === activeCategory;
     const matchesSubcategory = activeSubcategory === 'All' || p.en?.subcategory === activeSubcategory;
-    return matchesSection && matchesCategory && matchesSubcategory;
+    
+    let matchesSearch = true;
+    if (searchQuery.trim() !== '') {
+      const lowerQuery = searchQuery.toLowerCase();
+      const nameMatches = p.en?.name?.toLowerCase().includes(lowerQuery) || p.hi?.name?.toLowerCase().includes(lowerQuery) || p.kn?.name?.toLowerCase().includes(lowerQuery);
+      const fabricMatches = p.en?.fabric?.toLowerCase().includes(lowerQuery) || p.hi?.fabric?.toLowerCase().includes(lowerQuery) || p.kn?.fabric?.toLowerCase().includes(lowerQuery);
+      const colorMatches = p.colors?.some(c => c.toLowerCase().includes(lowerQuery));
+      matchesSearch = !!(nameMatches || fabricMatches || colorMatches);
+    }
+
+    return matchesSection && matchesCategory && matchesSubcategory && matchesSearch;
   });
 
   if (isLoading) {
@@ -683,20 +694,32 @@ const options = {
              {t.collectionSection.desc}
           </p>
 
-          {/* Section Tabs */}
-          <div className="flex gap-8 border-b border-[#3C101B]/10 pb-4 mb-4">
-             <button 
-               onClick={() => { setActiveSection('Saree'); setActiveCategory('All'); }}
-               className={`whitespace-nowrap transition-colors text-lg font-serif ${activeSection === 'Saree' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
-             >
-               Sarees
-             </button>
-             <button 
-               onClick={() => { setActiveSection('Kurti'); setActiveCategory('All'); }}
-               className={`whitespace-nowrap transition-colors text-lg font-serif ${activeSection === 'Kurti' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
-             >
-               Kurti
-             </button>
+          {/* Section Tabs and Search */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#3C101B]/10 pb-4 mb-4 gap-4">
+             <div className="flex gap-8">
+               <button 
+                 onClick={() => { setActiveSection('Saree'); setActiveCategory('All'); }}
+                 className={`whitespace-nowrap transition-colors text-lg font-serif ${activeSection === 'Saree' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
+               >
+                 Sarees
+               </button>
+               <button 
+                 onClick={() => { setActiveSection('Kurti'); setActiveCategory('All'); }}
+                 className={`whitespace-nowrap transition-colors text-lg font-serif ${activeSection === 'Kurti' ? 'text-[#3C101B] border-b border-[#3C101B]' : 'text-[#3C101B]/40 hover:text-[#3C101B]'}`}
+               >
+                 Kurti
+               </button>
+             </div>
+             <div className="relative w-full md:w-64">
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products, fabric, color..."
+                  className="w-full bg-white border border-[#3C101B]/10 text-[#3C101B] px-4 py-2 pr-10 rounded-sm focus:outline-none focus:border-[#3C101B]/30 placeholder:text-[#3C101B]/40 text-sm"
+                />
+                <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3C101B]/40" />
+             </div>
           </div>
 
           {/* Category Tabs */}
