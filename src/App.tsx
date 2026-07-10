@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck } from 'lucide-react';
+import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck, Phone } from 'lucide-react';
 import { Product, Offer, Order } from './types';
 import AdminPanel from './components/AdminPanel';
 import LoginModal from './components/LoginModal';
@@ -488,11 +488,12 @@ const options = {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.filter(p => p.isDailyOffer).map(product => {
-                const pData = product[lang] || product.en;
-                return (
-                  <div key={product.id} className="flex flex-col group cursor-pointer" onClick={() => setSelectedProduct(product)}>
+            <div className="relative group/daily-slider">
+              <div className="flex overflow-x-auto gap-4 md:gap-6 pb-8 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" id="daily-offer-slider">
+                {products.filter(p => p.isDailyOffer).map(product => {
+                  const pData = product[lang] || product.en;
+                  return (
+                    <div key={product.id} className="min-w-[160px] md:min-w-[240px] snap-start flex flex-col group cursor-pointer" onClick={() => setSelectedProduct(product)}>
                     <div className="relative aspect-[4/5] bg-[#EAE5DB] mb-4 overflow-hidden rounded-md shadow-lg border border-white/10">
                        {product.image ? (
                          <img referrerPolicy="no-referrer" src={product.image} alt={pData.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -561,6 +562,19 @@ const options = {
                   </div>
                 );
               })}
+              </div>
+              <button 
+                onClick={() => { document.getElementById('daily-offer-slider')?.scrollBy({ left: 240, behavior: 'smooth' }) }}
+                className="absolute right-0 top-[40%] -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover/daily-slider:opacity-100 transition-opacity hover:bg-white hover:text-[#3C101B]"
+              >
+                <ChevronRight size={20} />
+              </button>
+              <button 
+                onClick={() => { document.getElementById('daily-offer-slider')?.scrollBy({ left: -240, behavior: 'smooth' }) }}
+                className="absolute left-0 top-[40%] -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover/daily-slider:opacity-100 transition-opacity hover:bg-white hover:text-[#3C101B]"
+              >
+                <ChevronLeft size={20} />
+              </button>
             </div>
           </div>
         </section>
@@ -1391,6 +1405,14 @@ const options = {
           </div>
         </div>
       )}
+      {/* Floating Call Button */}
+      <a
+        href="tel:9620779955"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#3C101B] text-white rounded-full flex items-center justify-center shadow-2xl hover:bg-[#A28B55] transition-colors hover:scale-110 duration-300"
+        aria-label="Call Shop"
+      >
+        <Phone size={24} className="animate-[wiggle_1s_ease-in-out_infinite]" />
+      </a>
     </div>
   );
 }
