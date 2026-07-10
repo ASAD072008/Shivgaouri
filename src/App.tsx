@@ -718,15 +718,15 @@ const options = {
             </button>
           </div>
 
-          {/* Horizontal Product List */}
-          <div className="relative group/slider">
-            <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" id="slider">
+          {/* Grid Product List */}
+          <div className="relative">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 pb-8" id="slider">
               {filteredProducts.length > 0 ? filteredProducts.map(product => {
                 const pData = product[lang] || product.en;
                 const message = `Hello Shivgouri, I am interested in purchasing the ${pData.name} (${formatPrice(product.price)}).`;
                 const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
                 return (
-                  <div key={product.id} className="min-w-[280px] md:min-w-[320px] snap-start flex flex-col group/item">
+                  <div key={product.id} className="flex flex-col group/item">
                     <div className="relative aspect-[4/5] bg-[#EAE5DB] mb-4 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedProduct(product)}>
                        {product.image ? (
                          <img referrerPolicy="no-referrer" src={product.image} alt={pData.name} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-700" />
@@ -794,24 +794,11 @@ const options = {
                   </div>
                 );
               }) : (
-                <div className="w-full text-center py-20 text-[#3C101B]/50 font-serif italic text-lg">
+                <div className="w-full text-center py-20 text-[#3C101B]/50 font-serif italic text-lg col-span-full">
                   {t.emptyProducts}
                 </div>
               )}
             </div>
-            {/* Scroll buttons */}
-            <button 
-              onClick={() => { document.getElementById('slider')?.scrollBy({ left: 340, behavior: 'smooth' }) }}
-              className="absolute right-2 top-[40%] -translate-y-1/2 w-12 h-12 bg-white/90 shadow-md rounded-full flex items-center justify-center text-[#3C101B] opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-white"
-            >
-              <ChevronRight size={24} />
-            </button>
-            <button 
-              onClick={() => { document.getElementById('slider')?.scrollBy({ left: -340, behavior: 'smooth' }) }}
-              className="absolute left-2 top-[40%] -translate-y-1/2 w-12 h-12 bg-white/90 shadow-md rounded-full flex items-center justify-center text-[#3C101B] opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-white"
-            >
-              <ChevronLeft size={24} />
-            </button>
           </div>
         </div>
       </section>
