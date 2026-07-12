@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import heic2any from 'heic2any';
-import { X, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, Layers, Box, Languages, RefreshCcw } from 'lucide-react';
+import { X, Plus, Edit2, Trash2, Save, Image as ImageIcon, Upload, Layers, Box, Languages, RefreshCcw, ArrowUp, ArrowDown } from 'lucide-react';
 import { Product, Category, Offer, Order } from '../types';
 import { saveProduct, deleteProduct, saveCategory, deleteCategory, saveOffer, deleteOffer, fetchOrders, saveOrder, deleteOrder } from '../firebase';
 
@@ -148,11 +148,9 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
       await saveProduct(editing);
       console.log("[AdminPanel] saveProduct returned successfully!");
       const exists = products.find(p => p.id === editing.id);
-      if (exists) {
-        setProducts(products.map(p => p.id === editing.id ? editing : p));
-      } else {
-        setProducts([...products, editing]);
-      }
+      let updated = exists ? products.map(p => p.id === editing.id ? editing : p) : [...products, editing];
+      updated.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      setProducts(updated);
     } catch (e: any) {
       console.error("============== ADMIN PANEL SAVE ERROR ==============");
       console.error("Error saving product to Firestore:", e);
@@ -234,11 +232,9 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
     try {
       await saveCategory(editingCategory);
       const exists = categories.find(c => c.id === editingCategory.id);
-      if (exists) {
-        setCategories(categories.map(c => c.id === editingCategory.id ? editingCategory : c));
-      } else {
-        setCategories([...categories, editingCategory]);
-      }
+      let updated = exists ? categories.map(c => c.id === editingCategory.id ? editingCategory : c) : [...categories, editingCategory];
+      updated.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      setCategories(updated);
     } catch (e) {
       console.error("Error saving category to Firestore:", e);
     }
@@ -311,6 +307,67 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
     });
   };
 
+  
+  
+  const [draggedProductIndex, setDraggedProductIndex] = useState<number | null>(null);
+  const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
+
+  const handleProductDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedProductIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+  
+  const handleProductDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedProductIndex === null || draggedProductIndex === dropIndex) return;
+
+    const newProducts = [...products];
+    const draggedProduct = newProducts[draggedProductIndex];
+    
+    newProducts.splice(draggedProductIndex, 1);
+    newProducts.splice(dropIndex, 0, draggedProduct);
+    
+    const updatedProducts = newProducts.map((p, idx) => ({ ...p, sortOrder: idx }));
+    setProducts(updatedProducts);
+    setDraggedProductIndex(null);
+
+    const updates = updatedProducts.filter((p, i) => p.sortOrder !== products.find(op => op.id === p.id)?.sortOrder);
+    try {
+      await Promise.all(updates.map(p => saveProduct(p)));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCategoryDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedCategoryIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+  
+  const handleCategoryDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedCategoryIndex === null || draggedCategoryIndex === dropIndex) return;
+
+    const newCats = [...categories];
+    const draggedCat = newCats[draggedCategoryIndex];
+    
+    newCats.splice(draggedCategoryIndex, 1);
+    newCats.splice(dropIndex, 0, draggedCat);
+    
+    const updatedCats = newCats.map((c, idx) => ({ ...c, sortOrder: idx }));
+    setCategories(updatedCats);
+    setDraggedCategoryIndex(null);
+
+    const updates = updatedCats.filter((c, i) => c.sortOrder !== categories.find(oc => oc.id === c.id)?.sortOrder);
+    try {
+      await Promise.all(updates.map(c => saveCategory(c)));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+  
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -580,6 +637,21 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                     </div>
                   </div>
 
+                  <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#8B1C31]"></span> Sorting
+                    </h4>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2 font-medium">Sort Order (Lower is first)</label>
+                      <input 
+                        type="number" 
+                        value={editingCategory.sortOrder ?? ''} 
+                        onChange={e => setEditingCategory({...editingCategory, sortOrder: e.target.value ? parseInt(e.target.value) : 0})} 
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#8B1C31]" 
+                      />
+                    </div>
+                  </div>
+
                   {/* Kannada Section */}
                   <div className="space-y-4 p-5 border border-gray-100 rounded-lg bg-gray-50/50">
                     <div className="flex items-center justify-between"><h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8B1C31] flex items-center gap-2">
@@ -791,6 +863,16 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       placeholder="e.g. 10"
                     />
                   </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Sort Order (Lower = First)</label>
+                    <input 
+                      type="number" 
+                      value={editing.sortOrder ?? ''}
+                      onChange={e => setEditing({...editing, sortOrder: e.target.value ? parseInt(e.target.value) : 0})}
+                      className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
 
                 <div className="mt-4 border border-gray-100 rounded-lg p-4 bg-white shadow-sm">
@@ -933,7 +1015,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                         className="w-full border border-gray-200 rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#8B1C31] focus:ring-1 focus:ring-[#8B1C31] transition-shadow bg-gray-50"
                       >
                         <option value="" disabled>Select a category</option>
-                        {categories.map(c => (
+                        {categories.map((c, index) => (
                           <option key={c.id} value={c.id}>{c.en} / {c.kn}</option>
                         ))}
                       </select>
@@ -1100,8 +1182,8 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
               </div>
               
               <div className="grid gap-3">
-                {products.map(p => (
-                  <div key={p.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all bg-white group">
+                {products.map((p, index) => (
+                  <div key={p.id} draggable onDragStart={(e) => handleProductDragStart(e, index)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleProductDrop(e, index)} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all bg-white group cursor-move">
                     <div className="flex items-center gap-5 w-full sm:w-auto mb-4 sm:mb-0">
                       <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                         {p.image ? (
@@ -1112,7 +1194,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       </div>
                       <div>
                         <h4 className="font-medium text-[#1a1a1a] font-serif text-lg leading-tight mb-1">{p.en?.name}</h4>
-                        <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">{formatPrice(p.price)} <span className="mx-2 text-gray-300">|</span> {p.en?.badge} {p.en?.subcategory ? ` / ${p.en?.subcategory}` : ''}</p>
+                        <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">{formatPrice(p.price)} <span className="mx-2 text-gray-300">|</span> {p.en?.badge} {p.en?.subcategory ? ` / ${p.en?.subcategory}` : ''} <span className="mx-2 text-gray-300">|</span> Sort: {p.sortOrder || 0}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -1128,6 +1210,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                         </div>
                       ) : (
                         <>
+                          
                           <button onClick={() => setEditing(p)} className="p-2.5 text-gray-400 hover:text-[#8B1C31] hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100">
                             <Edit2 size={16} />
                           </button>
@@ -1164,7 +1247,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
               
               <div className="grid gap-3">
                 {categories.map(c => (
-                  <div key={c.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all bg-white group">
+                  <div key={c.id} draggable onDragStart={(e) => handleCategoryDragStart(e, index)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleCategoryDrop(e, index)} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all bg-white group cursor-move">
                     <div className="flex items-center gap-5 w-full sm:w-auto mb-4 sm:mb-0">
                       <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                         {c.image ? (
@@ -1200,6 +1283,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                         </div>
                       ) : (
                         <>
+                          
                           <button onClick={() => setEditingCategory(c)} className="p-2.5 text-gray-400 hover:text-[#8B1C31] hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100">
                             <Edit2 size={16} />
                           </button>

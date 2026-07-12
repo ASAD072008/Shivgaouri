@@ -151,6 +151,9 @@ export default function App() {
         const fetchedProds = await fetchProducts();
         const fetchedOffers = await fetchOffers();
         
+        fetchedCats.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        fetchedProds.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        
         setCategories(fetchedCats);
         setProducts(fetchedProds);
         setOffers(fetchedOffers);

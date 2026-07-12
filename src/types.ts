@@ -1,4 +1,5 @@
 export type Category = {
+  sortOrder?: number;
   id: string;
   en: string;
   kn: string;
@@ -20,6 +21,7 @@ export type Offer = {
 export type Review = { id: string; name: string; rating: number; text: string; date: number; };
 
 export type Product = {
+  sortOrder?: number;
   id: number;
   price: string;
   image: string;
