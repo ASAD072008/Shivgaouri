@@ -12,3 +12,101 @@
     100% { transform: translateX(-50%); }
   }
 }
+
+:root {
+  --bg-primary: #F7F4EF;
+  --bg-secondary: #F3EFE8;
+  --bg-dark: #3C101B;
+  --bg-footer: #3C101B;
+  --text-primary: #3C101B;
+  --text-secondary: #3C101B;
+  --text-light: #F3EFE8;
+  --accent: #A28B55;
+  --accent-secondary: #8B1C31;
+}
+
+
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/80  backdrop-blur-md border border-white/20 ;
+  }
+  .glass-dark {
+    @apply bg-[#3C101B]/90  backdrop-blur-lg border-b border-white/10 ;
+  }
+  .glass-light {
+    @apply bg-white/95  backdrop-blur-lg border-t border-gray-100 ;
+  }
+  .text-gradient {
+    background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(to right, var(--accent-secondary), var(--accent));
+  }
+  .skeleton {
+    @apply bg-gray-200  animate-pulse rounded;
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/5 ;
+  }
+}
+
+/* Animations */
+@keyframes slow-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.98); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slow-spin {
+  animation: slow-spin 8s linear infinite;
+}
+.animate-gentle-pulse {
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Focus styles */
+input:focus, select:focus, textarea:focus, button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(162, 139, 85, 0.3);
+  border-color: var(--accent);
+}
