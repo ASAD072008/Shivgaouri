@@ -415,7 +415,7 @@ export default function App() {
           <div className="absolute inset-0 rounded-full border-t-2 border-[var(--accent-secondary)] animate-slow-spin"></div>
           <div className="absolute inset-2 rounded-full border-b-2 border-[#CBA135] animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
           <div className="absolute inset-0 flex items-center justify-center">
-             <span className="text-2xl">🪷</span>
+             <img src="/logo.jpg" alt="Logo" className="w-12 h-12 object-contain rounded-full " />
           </div>
         </div>
         <div className="skeleton h-4 w-48 mb-3 opacity-60"></div>
@@ -517,7 +517,7 @@ export default function App() {
             >
               <X size={24} />
             </button>
-            <h2 className="font-logo text-2xl tracking-[0.1em] text-white uppercase mb-12 mt-4">Shivgouri</h2>
+            <img src="/logo.jpg" alt="Shivgouri Logo" className="h-12 object-contain mb-12 mt-4" />
             <div className="flex flex-col gap-6 text-white text-sm uppercase tracking-widest">
               <a href="#" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[var(--accent)] transition-colors">{t.nav.home}</a>
               <a href="#collection" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[var(--accent)] transition-colors">{t.nav.collection}</a>
