@@ -1,0 +1,15 @@
+{
+  "name": "Shivgouri Silk Sarees",
+  "short_name": "Shivgouri",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8B1C31",
+  "icons": [
+    {
+      "src": "/logo.jpg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
