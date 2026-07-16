@@ -538,8 +538,9 @@ export default function App() {
         
         {/* Mobile Image */}
         <div className="absolute inset-0 w-full h-full block md:hidden">
-           <img src="/853180.jpg" alt="Shivgouri Elegance" className="w-full h-full object-cover object-[65%_center]" />
-           <div className="absolute inset-0 bg-gradient-to-r from-[#C5BBAC]/60 via-transparent to-transparent" />
+           <img src="/853180.jpg" alt="Shivgouri Elegance" className="w-full h-full object-cover object-[65%_top]" />
+           <div className="absolute inset-0 bg-gradient-to-t from-[#C5BBAC]/80 via-transparent to-[#C5BBAC]/50" />
+           <div className="absolute inset-0 bg-[#C5BBAC]/20" />
         </div>
         
         <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-12 w-full relative z-10 flex flex-col md:flex-row items-center">
@@ -1116,7 +1117,7 @@ export default function App() {
       </footer>
 
       {isAdminOpen && (
-        <Suspense fallback={<div className="fixed inset-0 bg-white z-50 flex items-center justify-center font-serif text-xl animate-pulse text-[var(--accent-secondary)]">Loading Admin Panel...</div>}>
+        <Suspense fallback={<div className="fixed inset-0 bg-white z-[60] flex items-center justify-center font-serif text-xl animate-pulse text-[var(--accent-secondary)]">Loading Admin Panel...</div>}>
           <AdminPanel 
             products={products} 
             setProducts={setProducts} 
@@ -1132,7 +1133,7 @@ export default function App() {
       {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} />}
       {/* Product Details Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-6 lg:p-12">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 md:p-6 lg:p-12">
           <div className="absolute inset-0 bg-[var(--bg-dark)]/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)}></div>
           <div className="relative bg-[#FAFAFA] w-full h-full md:max-w-6xl md:h-[90vh] md:rounded-xl overflow-hidden shadow-2xl flex flex-col md:flex-row">
             <button 
@@ -1403,7 +1404,7 @@ export default function App() {
 
       {/* Cart Sidebar */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="fixed inset-0 z-[60] flex justify-end">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />
           <div className="relative w-full max-w-md bg-[var(--bg-primary)] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             <div className="flex items-center justify-between p-6 border-b border-[var(--text-primary)]/10">

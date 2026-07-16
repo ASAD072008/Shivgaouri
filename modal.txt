@@ -1,0 +1,271 @@
+      {/* Product Details Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-6 lg:p-12">
+          <div className="absolute inset-0 bg-[var(--bg-dark)]/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)}></div>
+          <div className="relative bg-[#FAFAFA] w-full h-full md:max-w-6xl md:h-[90vh] md:rounded-xl overflow-hidden shadow-2xl flex flex-col md:flex-row">
+            <button 
+              onClick={() => {
+                const url = `${window.location.origin}?product=${selectedProduct.id}`;
+                if (navigator.share) {
+                  navigator.share({
+                    title: (selectedProduct[lang] || selectedProduct.en).name,
+                    text: `Check out ${(selectedProduct[lang] || selectedProduct.en)?.name} at Shivgouri`,
+                    url: url
+                  }).catch(console.error);
+                } else {
+                  navigator.clipboard.writeText(url);
+                  alert('Link copied to clipboard!');
+                }
+              }}
+              className="absolute right-14 top-4 md:right-16 md:top-6 z-20 w-10 h-10 flex items-center justify-center bg-white/90 backdrop-blur-md shadow-sm rounded-full text-[var(--text-primary)] hover:bg-white transition-colors"
+              title="Share or copy link"
+            >
+              <Share size={18} />
+            </button>
+            <button 
+              onClick={() => setSelectedProduct(null)}
+              className="absolute right-4 top-4 md:right-6 md:top-6 z-20 w-10 h-10 flex items-center justify-center bg-white/90 backdrop-blur-md shadow-sm rounded-full text-[var(--text-primary)] hover:bg-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="w-full md:w-[55%] lg:w-3/5 bg-[var(--bg-secondary)] relative h-[50vh] md:h-full">
+              <div 
+                className="relative w-full h-full overflow-hidden hidden md:block group cursor-crosshair"
+                onMouseEnter={() => setShowMagnifier(true)}
+                onMouseLeave={() => setShowMagnifier(false)}
+                onMouseMove={(e) => {
+                  const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+                  const x = ((e.clientX - left) / width) * 100;
+                  const y = ((e.clientY - top) / height) * 100;
+                  setMagnifierPos({ x, y });
+                }}
+              >
+                {selectedProduct.image ? (
+                  <img 
+                    referrerPolicy="no-referrer" 
+                    src={selectedProduct.image} 
+                    loading="lazy" 
+                    alt={(selectedProduct[lang] || selectedProduct.en)?.name} 
+                    className={`w-full h-full object-cover transition-transform duration-300 ease-out ${showMagnifier ? 'scale-[2.5]' : 'scale-100'}`}
+                    style={showMagnifier ? { transformOrigin: `${magnifierPos.x}% ${magnifierPos.y}%` } : {}}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[var(--text-primary)]/20">
+                    <img src="/team-shivgouri.png" alt="Shivgouri Team" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+                  </div>
+                )}
+              </div>
+              
+              {/* Mobile version without hover magnifier (using standard CSS touch zoom if enabled by browser or just standard image) */}
+              <div className="relative w-full h-full overflow-hidden block md:hidden">
+                {selectedProduct.image ? (
+                  <img 
+                    referrerPolicy="no-referrer" 
+                    src={selectedProduct.image} 
+                    loading="lazy" 
+                    alt={(selectedProduct[lang] || selectedProduct.en)?.name} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[var(--text-primary)]/20">
+                    <img src="/team-shivgouri.png" alt="Shivgouri Team" className="w-full h-full object-cover opacity-80" />
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Scrollable Details Area */}
+            <div className="w-full md:w-[45%] lg:w-2/5 p-6 md:p-10 lg:p-14 flex flex-col h-[50vh] md:h-full overflow-y-auto bg-[#FAFAFA]">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-[10px] uppercase tracking-widest text-[var(--accent)] block">{(selectedProduct[lang] || selectedProduct.en)?.badge} {(selectedProduct[lang] || selectedProduct.en)?.subcategory ? `/ ${(selectedProduct[lang] || selectedProduct.en)?.subcategory}` : ''}</span>
+                {(selectedProduct.inOffer || selectedProduct.isDailyOffer) && (
+                  <span className="bg-[var(--accent-secondary)] text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">{selectedProduct.discountRate ? formatDiscount(selectedProduct.discountRate) : "Offer"}</span>
+                )}
+                {selectedProduct.stock !== undefined && selectedProduct.stock > 0 && selectedProduct.stock < 5 && (
+                  <span className="bg-orange-500 text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">Low Stock</span>
+                )}
+              </div>
+              <h2 className="font-serif text-3xl md:text-4xl text-[var(--text-primary)] mb-3 leading-tight">{(selectedProduct[lang] || selectedProduct.en)?.name}</h2>
+              
+              <div className="flex items-end gap-4 mb-8">
+                {(selectedProduct.inOffer || selectedProduct.isDailyOffer) && selectedProduct.offerPrice ? (
+                  <>
+                    <p className="text-3xl font-bold text-[var(--accent-secondary)]">{formatPrice(selectedProduct.offerPrice)}</p>
+                    <p className="text-lg font-medium text-gray-400 line-through pb-0.5">{formatPrice(selectedProduct.price)}</p>
+                  </>
+                ) : (
+                  <p className="text-2xl font-medium text-[var(--accent)]">{formatPrice(selectedProduct.price)}</p>
+                )}
+                {selectedProduct.stock !== undefined && (
+                  <p className={`text-sm font-medium mb-1 ${selectedProduct.stock > 0 ? 'text-gray-500' : 'text-red-500'}`}>
+                    {selectedProduct.stock > 0 ? `${selectedProduct.stock} in stock` : 'Out of stock'}
+                  </p>
+                )}
+              </div>
+              
+              {selectedProduct.images && selectedProduct.images.length > 0 && (
+                <div className="mb-8">
+                  <h4 className="text-[10px] uppercase tracking-widest text-[var(--text-primary)]/50 mb-4 border-b border-[var(--text-primary)]/10 pb-2">More Views</h4>
+                  <div className="flex gap-3 overflow-x-auto pb-2 snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    {selectedProduct.images.map((img, i) => (
+                      <div key={i} className="w-20 aspect-[4/5] flex-shrink-0 bg-[var(--bg-secondary)] snap-start cursor-pointer hover:opacity-80 transition-opacity rounded-md overflow-hidden" onClick={() => setSelectedProduct({...selectedProduct, image: img, images: [selectedProduct.image!, ...selectedProduct.images!.filter((_, idx) => idx !== i)]})}>
+                        <img referrerPolicy="no-referrer" src={img} loading="lazy" className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {(selectedProduct[lang] || selectedProduct.en)?.description && (
+                <div className="mb-8">
+                  <h4 className="text-[10px] uppercase tracking-widest text-[var(--text-primary)]/50 mb-4 border-b border-[var(--text-primary)]/10 pb-2">Description</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                    {(selectedProduct[lang] || selectedProduct.en)?.description}
+                  </p>
+                </div>
+              )}
+
+              {selectedProduct.colors && selectedProduct.colors.length > 0 && (
+                <div className="mb-8">
+                  <h4 className="text-[10px] uppercase tracking-widest text-[var(--text-primary)]/50 mb-4 border-b border-[var(--text-primary)]/10 pb-2">Available Colors</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProduct.colors.map((c, i) => (
+                      <button 
+                        key={i} 
+                        onClick={() => setSelectedColor(c)}
+                        className={`px-4 py-2 border rounded-md text-[11px] font-medium uppercase tracking-widest shadow-sm transition-colors ${selectedColor === c || (!selectedColor && i === 0) ? 'bg-[var(--bg-dark)] text-white border-[var(--text-primary)]' : 'bg-white border-[var(--text-primary)]/10 text-[var(--text-primary)] hover:bg-[var(--bg-dark)]/5'}`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedProduct.specifications && selectedProduct.specifications.length > 0 && (
+                <div className="mb-8 bg-[var(--bg-primary)] p-6 rounded-lg border border-[var(--text-primary)]/5">
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-primary)] mb-6 border-b border-[var(--text-primary)]/10 pb-4 flex items-center gap-2">
+                    Product Specifications
+                  </h4>
+                  <div className="flex flex-col">
+                    {selectedProduct.specifications.map((spec, i) => (
+                      <div key={i} className={`flex py-3 ${i !== selectedProduct.specifications!.length - 1 ? 'border-b border-[var(--text-primary)]/5' : ''}`}>
+                        <span className="w-1/3 text-sm text-[var(--text-primary)]/60 font-medium">{spec.key}</span>
+                        <span className="w-2/3 text-sm text-[var(--text-primary)] font-bold">{spec.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews Section */}
+              <div className="mb-8 border-t border-[var(--text-primary)]/10 pt-8">
+                <h4 className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-primary)] mb-6 flex items-center gap-2">
+                  Customer Reviews
+                </h4>
+                <div className="mb-8 relative" style={{ minHeight: '140px' }}>
+                  {selectedProduct.reviews && selectedProduct.reviews.length > 0 ? (
+                    <div className="relative w-full overflow-hidden h-[140px]">
+                      <AnimatePresence mode="wait">
+                        {selectedProduct.reviews.map((review, idx) => idx === (currentReviewIndex % selectedProduct.reviews.length) && (
+                          <motion.div
+                            key={review.id}
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -50 }}
+                            transition={{ duration: 0.5 }}
+                            className="absolute inset-0 bg-white p-4 rounded-lg shadow-sm border border-[var(--text-primary)]/5 overflow-y-auto custom-scrollbar"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-bold text-sm text-[var(--text-primary)]">{review.name}</span>
+                              <div className="flex text-[var(--accent)]">
+                                {[1, 2, 3, 4, 5].map(star => (
+                                  <Star key={star} size={12} fill={star <= review.rating ? "currentColor" : "none"} className={star <= review.rating ? "text-[var(--accent)]" : "text-gray-300"} />
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{review.text}</p>
+                            <span className="text-[10px] text-gray-400 uppercase tracking-widest">{new Date(review.date).toLocaleDateString()}</span>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No reviews yet. Be the first to review!</p>
+                  )}
+                </div>
+                
+                <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-[var(--text-primary)]/5">
+                  <h5 className="text-[10px] uppercase tracking-widest text-[var(--text-primary)]/50 mb-4 border-b border-[var(--text-primary)]/10 pb-2">Add Your Review</h5>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[var(--text-primary)]/70 mb-1">Name</label>
+                      <input type="text" value={reviewName} onChange={e => setReviewName(e.target.value)} className="w-full bg-white border border-[var(--text-primary)]/10 text-[var(--text-primary)] px-3 py-2 rounded-sm focus:outline-none focus:border-[var(--text-primary)]/30 text-sm" placeholder="Your name" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[var(--text-primary)]/70 mb-1">Rating</label>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button key={star} onClick={() => setReviewRating(star)} className="focus:outline-none">
+                            <Star size={18} fill={star <= reviewRating ? "currentColor" : "none"} className={star <= reviewRating ? "text-[var(--accent)]" : "text-gray-300 hover:text-[var(--accent)]/50"} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[var(--text-primary)]/70 mb-1">Review</label>
+                      <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} className="w-full bg-white border border-[var(--text-primary)]/10 text-[var(--text-primary)] px-3 py-2 rounded-sm focus:outline-none focus:border-[var(--text-primary)]/30 text-sm min-h-[80px]" placeholder="Share your experience..."></textarea>
+                    </div>
+                    <button 
+                      onClick={handleSubmitReview}
+                      disabled={!reviewName.trim() || !reviewText.trim()}
+                      className="bg-[var(--bg-dark)] text-white px-4 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-[var(--accent)] transition-colors rounded-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Submit Review
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-auto pt-8">
+                {selectedProduct.stock !== undefined && selectedProduct.stock <= 0 ? (
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const updatedProduct = { ...selectedProduct, restockRequests: (selectedProduct.restockRequests || 0) + 1 };
+                        const { saveProduct } = await import('./firebase');
+                        await saveProduct(updatedProduct);
+                        setSelectedProduct(updatedProduct);
+                        setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+                        showToast("Thanks for your request! We will try to restock this soon.");
+                      } catch (e) {
+                        console.error(e);
+                        alert("Failed to send request. Please try again.");
+                      }
+                    }}
+                    className="w-full bg-[var(--accent-secondary)] text-white py-4 text-xs uppercase tracking-widest font-bold hover:bg-[#6A1525] transition-colors shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <RefreshCcw size={16} /> Request Restock
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      const colorToAdd = selectedProduct.colors && selectedProduct.colors.length > 0 
+                        ? (selectedColor || selectedProduct.colors[0]) 
+                        : undefined;
+                      addToCart(selectedProduct, colorToAdd);
+                      setSelectedProduct(null);
+                      setSelectedColor('');
+                    }}
+                    className="w-full bg-[var(--bg-dark)] text-white py-4 text-xs uppercase tracking-widest font-bold hover:bg-[var(--bg-dark)] transition-colors shadow-lg"
+                  >
+                    Add to Cart
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
