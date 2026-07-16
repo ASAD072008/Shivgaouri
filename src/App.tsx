@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck, Phone, Search, Star, Home, ArrowUp, Sun, Moon } from 'lucide-react';
+import { Menu, ShoppingBag, ArrowRight, Globe, Lock, ChevronLeft, ChevronRight, ImageIcon, X, Share, ShieldCheck, RefreshCcw, Truck, Phone, Search, Star, Home, ArrowUp, Sun, Moon, Mail, MapPin, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product, Offer, Order } from './types';
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
@@ -991,10 +991,7 @@ export default function App() {
              <p className="text-white/70 text-sm md:text-base leading-relaxed mb-10 max-w-md mx-auto md:mx-0">
                {t.about.desc}
              </p>
-             <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-6 text-[10px] uppercase tracking-widest text-white/70">
-               <a href="https://maps.app.goo.gl/Xmbb7zuQgSnhyt58A" target="_blank" rel="noopener noreferrer" className="bg-transparent px-6 py-3 border border-white/20 hover:bg-white/10 transition-colors">Get Directions</a>
-               <span>{waNumber}</span>
-             </div>
+
           </div>
            <div className="w-full h-[300px] md:h-auto md:aspect-[3/2] md:flex-1 relative bg-[var(--bg-secondary)]/10 overflow-hidden rounded-lg md:rounded-none mt-8 md:mt-0 shadow-xl">
              <img src="/team-shivgouri.png" alt="Shivgouri Team" className="absolute inset-0 w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
@@ -1041,72 +1038,50 @@ export default function App() {
 
       <footer id="contact" className="bg-[var(--bg-dark)] text-[var(--bg-secondary)] pt-16 pb-8 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
-              <div>
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-16 items-center">
+              <div className="flex flex-col md:items-start text-left lg:pr-12">
+                 <h3 className="font-serif text-3xl md:text-5xl mb-6 text-white">Visit Our Store</h3>
+                 <div className="w-16 h-px bg-[var(--accent)] mb-8"></div>
                  <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-[var(--accent)]">Register Address</h4>
-                 <p className="text-[11px] uppercase tracking-widest text-[var(--bg-secondary)]/70 mb-4 max-w-sm leading-relaxed">
-                   SHIVGOURI SILK SAREES, GOKAK, KARNATAKA
+                 <p className="text-[13px] uppercase tracking-widest text-[var(--bg-secondary)]/70 mb-8 max-w-sm leading-relaxed">
+                   SHIVGOURI SILK SAREES<br/>GOKAK, KARNATAKA, INDIA
                  </p>
-                 <p className="text-[11px] uppercase tracking-widest text-[var(--bg-secondary)]/70 mb-8 max-w-sm leading-relaxed">
-                   Contact us : +91 {waNumber.replace('91', '')}
-                 </p>
-              </div>
-              <div className="md:text-right flex flex-col md:items-end">
-                 <h4 className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4 text-[var(--accent)]">Subscribe To Our Emails</h4>
-                 <h3 className="font-serif text-2xl mb-3">Join Our Journey</h3>
-                 <p className="text-[var(--bg-secondary)]/70 text-xs max-w-xs mb-6">
-                   Be the first to explore special offers, exclusive discounts, and all our latest updates.
-                 </p>
-                 <div className="w-full max-w-xs">
-                   <div className="flex border border-white/20">
-                     <input type="email" placeholder="Email" className="bg-transparent px-4 py-3 w-full text-sm outline-none placeholder:text-white/30" />
-                     <button className="bg-white text-[var(--text-primary)] px-6 py-3 text-[10px] font-bold tracking-widest uppercase hover:bg-gray-200 transition-colors">
-                        Subscribe
-                     </button>
-                   </div>
+                 <div className="flex flex-col gap-6 w-full max-w-sm">
+                   <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-6 text-[11px] font-bold uppercase tracking-widest text-white hover:text-[var(--accent)] transition-colors group">
+                     <span className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center group-hover:border-[var(--accent)] transition-colors">
+                       <MessageCircle size={18} />
+                     </span>
+                     +91 {waNumber.replace('91', '')}
+                   </a>
+                   <a href="mailto:info@shivgouri.com" className="flex items-center gap-6 text-[11px] font-bold uppercase tracking-widest text-white hover:text-[var(--accent)] transition-colors group">
+                     <span className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center group-hover:border-[var(--accent)] transition-colors">
+                       <Mail size={18} />
+                     </span>
+                     info@shivgouri.com
+                   </a>
+                   <a href="https://maps.app.goo.gl/eZ7rtcwVjUid7vPo9" target="_blank" rel="noopener noreferrer" className="flex items-center gap-6 text-[11px] font-bold uppercase tracking-widest text-white hover:text-[var(--accent)] transition-colors group mt-2">
+                     <span className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center group-hover:border-[var(--accent)] transition-colors">
+                       <MapPin size={18} />
+                     </span>
+                     Get Directions
+                   </a>
                  </div>
               </div>
+              <div className="relative w-full h-[350px] md:h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 group">
+                <iframe 
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3824.234674718301!2d74.8187768!3d16.1704487!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc0afd607bbeddb%3A0x9cc509dd5b0afbb7!2sShiv%20Gouri%20(Silk%20And%20Sarees)!5e1!3m2!1sen!2sin" 
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: 0 }} 
+                  allowFullScreen={false} 
+                  loading="lazy" 
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="filter grayscale-[40%] contrast-125 opacity-90 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
+                ></iframe>
+                <div className="absolute inset-0 border border-white/10 rounded-2xl pointer-events-none"></div>
+              </div>
            </div>
 
-           <div className="w-full h-px bg-white/10 mb-16" />
-
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16 text-[10px] tracking-widest uppercase">
-             <div>
-               <h4 className="font-bold mb-6 text-[var(--accent)]">Shop</h4>
-               <ul className="space-y-4 text-[var(--bg-secondary)]/70 font-medium">
-                 <li><a href="#" className="hover:text-white transition-colors">Silk Sarees</a></li>
-                 <li><a href="#" className="hover:text-white transition-colors">Cotton Sarees</a></li>
-                 <li><a href="#" className="hover:text-white transition-colors">Bridal Collection</a></li>
-                 <li><a href="#" className="hover:text-white transition-colors">New Arrivals</a></li>
-               </ul>
-             </div>
-             <div>
-               <h4 className="font-bold mb-6 text-[var(--accent)]">Company</h4>
-               <ul className="space-y-4 text-[var(--bg-secondary)]/70 font-medium">
-                 <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                 <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-                 <li><a href="#" className="hover:text-white transition-colors">Our Weavers</a></li>
-                 <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-               </ul>
-             </div>
-             <div>
-               <h4 className="font-bold mb-6 text-[var(--accent)]">Support</h4>
-               <ul className="space-y-4 text-[var(--bg-secondary)]/70 font-medium">
-                 <li><a href="#" className="hover:text-white transition-colors">Order Tracking</a></li>
-                 <li><a href="#" className="hover:text-white transition-colors">Shipping Policy</a></li>
-                 <li><a href="#" className="hover:text-white transition-colors">Return & Refund</a></li>
-                 <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
-               </ul>
-             </div>
-             <div>
-               <h4 className="font-bold mb-6 text-[var(--accent)]">Legal</h4>
-               <ul className="space-y-4 text-[var(--bg-secondary)]/70 font-medium">
-                 <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                 <li><a href="#" className="hover:text-white transition-colors">Terms & Conditions</a></li>
-               </ul>
-             </div>
-           </div>
-           
            <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-white/10 text-[var(--bg-secondary)]/50 text-[10px] tracking-widest uppercase">
               <p>&copy; {new Date().getFullYear()} Shivgouri Silk and Sarees. All rights reserved.</p>
               <button onClick={() => setIsAdminOpen(true)} className="flex items-center gap-2 hover:text-white transition-colors mt-4 md:mt-0">
