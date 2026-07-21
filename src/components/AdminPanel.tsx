@@ -1246,7 +1246,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
               </div>
               
               <div className="grid gap-3">
-                {categories.map(c => (
+                {categories.map((c, index) => (
                   <div key={c.id} draggable onDragStart={(e) => handleCategoryDragStart(e, index)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleCategoryDrop(e, index)} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all bg-white group cursor-move">
                     <div className="flex items-center gap-5 w-full sm:w-auto mb-4 sm:mb-0">
                       <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -1258,7 +1258,7 @@ export default function AdminPanel({ products, setProducts, categories, setCateg
                       </div>
                       <div>
                         <h4 className="font-medium text-[#1a1a1a] text-sm leading-tight mb-1">{c.en}</h4>
-                        <p className="text-xs text-gray-500 font-medium tracking-wide">{c.kn}</p>
+                        <p className="text-xs text-gray-500 font-medium tracking-wide">{c.kn} <span className="mx-2 text-gray-300">|</span> Sort: {c.sortOrder || 0}</p>
                         {c.subcategories && c.subcategories.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {c.subcategories.map(sc => (

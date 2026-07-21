@@ -85,8 +85,6 @@ const formatPrice = (p: string | undefined) => {
 
 export default function App() {
   const [lang, setLang] = useState<'en' | 'kn' | 'hi'>('en');
-  const [magnifierPos, setMagnifierPos] = useState({ x: 0, y: 0 });
-  const [showMagnifier, setShowMagnifier] = useState(false);
   const [addingToCartState, setAddingToCartState] = useState<'idle' | 'adding' | 'added'>('idle');
   const [flyingItem, setFlyingItem] = useState<{ id: string, image: string, startX: number, startY: number, endX: number, endY: number } | null>(null);
   const [cartBump, setCartBump] = useState(false);
@@ -1139,15 +1137,7 @@ export default function App() {
             
             <div className="w-full md:w-[55%] lg:w-3/5 bg-[var(--bg-secondary)] relative h-[50vh] md:h-full">
               <div 
-                className="relative w-full h-full overflow-hidden hidden md:block group cursor-crosshair"
-                onMouseEnter={() => setShowMagnifier(true)}
-                onMouseLeave={() => setShowMagnifier(false)}
-                onMouseMove={(e) => {
-                  const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-                  const x = ((e.clientX - left) / width) * 100;
-                  const y = ((e.clientY - top) / height) * 100;
-                  setMagnifierPos({ x, y });
-                }}
+                className="relative w-full h-full overflow-hidden hidden md:block group"
               >
                 {selectedProduct.image ? (
                   <img 
@@ -1155,8 +1145,7 @@ export default function App() {
                     src={selectedProduct.image} 
                     loading="lazy" 
                     alt={(selectedProduct[lang] || selectedProduct.en)?.name} 
-                    className={`w-full h-full object-cover transition-transform duration-300 ease-out ${showMagnifier ? 'scale-[2.5]' : 'scale-100'}`}
-                    style={showMagnifier ? { transformOrigin: `${magnifierPos.x}% ${magnifierPos.y}%` } : {}}
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[var(--text-primary)]/20">
